@@ -68,7 +68,7 @@ impl Drop for WordsDb {
 
 #[cfg(test)]
 mod test {
-	use std::{io::Seek};
+	use std::io::Seek;
 
 	use super::*;
 	use tempfile;
@@ -122,10 +122,7 @@ mod test {
 		let mut f = tempfile::spooled_tempfile(100000);
 
 		let words = ["bar", "baz", "foo"];
-		for word in words {
-			f.write(word.as_bytes()).unwrap();
-			f.write(b"\n").unwrap();
-		}
+		f.write(words.join("\n").as_bytes()).unwrap();
 		f.seek(std::io::SeekFrom::Start(0)).unwrap();
 
 		{
