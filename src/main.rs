@@ -1,17 +1,20 @@
 use std::env;
+mod db_reader;
 
 fn get_word_len() -> Option<i32> {
-	let mut world_len_arg = false;
+	let mut word_len_arg = false;
 	for arg in env::args() {
 		if arg == "-w" {
-			world_len_arg = true;
+			word_len_arg = true;
 		} else {
-			if world_len_arg {
+			if word_len_arg {
 				let tmp_res = arg.trim().parse::<i32>();
 				if let Ok(res) = tmp_res {
-					return Some(res);
+					if res >= 4 && res <= 8 {
+						return Some(res);
+					}
 				}
-				world_len_arg = false;
+				word_len_arg = false;
 			}
 		}
 	}
