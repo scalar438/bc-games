@@ -11,25 +11,25 @@ pub struct WordsDb {
 
 impl WordsDb {
 	pub fn new(path: &std::path::Path) -> std::io::Result<Self> {
-		let mut f = std::fs::File::open(path);
-
-		let words;
-		if f.is_err() {
-			// Just for creation
-			f = std::fs::File::create(path);
-
-			words = Vec::new();
-		} else {
-			words = std::io::BufReader::new(f?)
-				.lines()
-				.map(|x| x.unwrap())
-				.collect();
+		match std::fs::File::open(path) {
+			Ok(mut f) => Self::new_from_file(&mut f, path),
+			Err(_) => Ok(Self {
+				words: Vec::new(),
+				new_words: Vec::new(),
+				db_filename: path.to_path_buf(),
+			}),
 		}
+	}
 
+	fn new_from_file(f: &mut dyn std::io::Read, path: &std::path::Path) -> std::io::Result<Self> {
+		let mut words = Vec::new();
+		for line in std::io::BufReader::new(f).lines() {
+			words.push(line?);
+		}
 		Ok(Self {
 			words,
-			new_words: Vec::new(),
 			db_filename: path.to_path_buf(),
+			new_words: Vec::new(),
 		})
 	}
 
@@ -40,10 +40,7 @@ impl WordsDb {
 	fn drop_with_checks(&mut self) -> std::io::Result<()> {
 		let mut f = std::fs::File::create(&self.db_filename)?;
 
-		for line in &self.words {
-			f.write(line.as_bytes())?;
-			f.write(b"\n")?;
-		}
+		f.write(self.words.join("\n").as_bytes())?;
 
 		return Ok(());
 	}
@@ -64,37 +61,128 @@ impl Drop for WordsDb {
 		});
 
 		if self.drop_with_checks().is_err() {
-			println!("Unexpected error during saving the word database file");
+			eprintln!("Unexpected error during saving the word database file");
 		}
 	}
 }
 
 #[cfg(test)]
 mod test {
+	use std::{io::Seek};
+
 	use super::*;
+	use tempfile;
 
-	#[test]
-	fn test_create() {
-		let filename = std::path::Path::new("test_create_db");
-		if filename.exists() {
-			panic!(
-				"The file/folder {:?} is exists before the running tests!",
-				filename
-			);
+	struct FileDeleter<'a> {
+		path: std::path::PathBuf,
+		res: &'a mut bool,
+	}
+
+	impl<'a> Drop for FileDeleter<'a> {
+		fn drop(&mut self) {
+			let r = std::fs::remove_file(&self.path);
+			*self.res = r.is_err();
+			if r.is_err() {
+				eprintln!(
+					"File delete error, filename: {:?}, err: {:?}",
+					self.path,
+					r.unwrap_err()
+				)
+			}
 		}
-
-		{
-			let db = WordsDb::new(filename);
-
-			let db = db.unwrap();
-			assert!(db.words.is_empty());
-		}
-		std::fs::remove_file(filename).unwrap();
 	}
 
 	#[test]
-	fn test_read() {}
+	fn test_init() {
+		let fname = std::path::Path::new("./test_create_db");
+		if fname.exists() {
+			panic!(
+				"The file/folder {:?} is exists before the running tests!",
+				fname
+			);
+		}
+
+		let mut file_delete_failed = false;
+		{
+			let _file_deleter = FileDeleter {
+				path: fname.to_path_buf(),
+				res: &mut file_delete_failed,
+			};
+			{
+				let db = WordsDb::new(fname);
+
+				let db = db.unwrap();
+				assert!(db.words.is_empty());
+			}
+		}
+	}
 
 	#[test]
-	fn test_read_and_write() {}
+	fn test_read() {
+		let mut f = tempfile::spooled_tempfile(100000);
+
+		let words = ["bar", "baz", "foo"];
+		for word in words {
+			f.write(word.as_bytes()).unwrap();
+			f.write(b"\n").unwrap();
+		}
+		f.seek(std::io::SeekFrom::Start(0)).unwrap();
+
+		{
+			let db = WordsDb::new_from_file(&mut f, std::path::Path::new(""));
+
+			let db = db.unwrap();
+			assert_eq!(db.words, words);
+		}
+	}
+
+	#[test]
+	fn test_read_and_write() {
+		let fname = std::path::Path::new("./test_read_and_write_db");
+		if fname.exists() {
+			panic!(
+				"The file/folder {:?} is exists before the running tests!",
+				fname
+			);
+		}
+
+		let mut file_delete_failed = false;
+		{
+			let _file_deleter = FileDeleter {
+				path: fname.to_path_buf(),
+				res: &mut file_delete_failed,
+			};
+			let mut all_words = Vec::new();
+
+			{
+				let db = WordsDb::new(fname);
+
+				let mut db = db.unwrap();
+				let words = ["foo", "bar", "baz"];
+				for word in words {
+					db.add_word(word);
+					all_words.push(word.to_owned());
+				}
+			}
+			all_words.sort();
+
+			{
+				let db = WordsDb::new(fname);
+
+				let mut db = db.unwrap();
+				assert_eq!(db.words, all_words);
+				db.add_word("qwe");
+				all_words.push("qwe".to_owned());
+			}
+			all_words.sort();
+
+			{
+				let db = WordsDb::new(fname);
+
+				let db = db.unwrap();
+				assert_eq!(db.words, all_words);
+			}
+		}
+		assert!(!file_delete_failed);
+	}
 }

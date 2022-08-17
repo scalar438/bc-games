@@ -3,3 +3,6 @@ name = "wordlie-solver"
 version = "0.1.0"
 authors = ["as.larin@hotmail.com"]
 edition = "2021"
+
+[dev-dependencies]
+tempfile ="3"
