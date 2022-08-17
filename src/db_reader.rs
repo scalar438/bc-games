@@ -1,6 +1,5 @@
 use std::{
-	cmp::Ordering,
-	io::{BufRead, Read, Write},
+	io::{BufRead, Write},
 };
 
 pub struct WordsDb {
