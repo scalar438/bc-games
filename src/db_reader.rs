@@ -1,6 +1,4 @@
-use std::{
-	io::{BufRead, Write},
-};
+use std::io::{BufRead, Write};
 
 pub struct WordsDb {
 	words: Vec<String>,
@@ -33,10 +31,24 @@ impl WordsDb {
 	}
 
 	pub fn add_word(&mut self, word: &str) {
-		self.new_words.push(word.to_owned());
+		self.new_words.push(word.to_lowercase());
 	}
 
-	fn drop_with_checks(&mut self) -> std::io::Result<()> {
+	pub fn words_iter(&self) -> impl Iterator<Item = &String> + '_ {
+		self.words.iter().chain(self.new_words.iter())
+	}
+
+	fn flush(&mut self) -> std::io::Result<()> {
+		self.words.append(&mut self.new_words);
+		self.words.sort_by(|a, b| {
+			let r1 = a.len().cmp(&b.len());
+			if !r1.is_eq() {
+				return r1;
+			}
+			return a.cmp(&b);
+		});
+		self.words.dedup();
+
 		let mut f = std::fs::File::create(&self.db_filename)?;
 
 		f.write(self.words.join("\n").as_bytes())?;
@@ -50,16 +62,8 @@ impl Drop for WordsDb {
 		if self.new_words.is_empty() {
 			return;
 		}
-		self.words.append(&mut self.new_words);
-		self.words.sort_by(|a, b| {
-			let r1 = a.len().cmp(&b.len());
-			if !r1.is_eq() {
-				return r1;
-			}
-			return a.cmp(&b);
-		});
 
-		if self.drop_with_checks().is_err() {
+		if self.flush().is_err() {
 			eprintln!("Unexpected error during saving the word database file");
 		}
 	}
