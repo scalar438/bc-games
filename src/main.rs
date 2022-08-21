@@ -5,7 +5,7 @@ mod words_chooser;
 fn get_word_len() -> Option<usize> {
 	let mut word_len_arg = false;
 	for arg in env::args() {
-		if arg == "-w" {
+		if arg == "-wl" {
 			word_len_arg = true;
 		} else {
 			if word_len_arg {
@@ -104,7 +104,7 @@ fn main() {
 	match get_word_len() {
 		Some(w) => word_len = w,
 		None => {
-			println!("The length of words is not set. Call the program with -w <len> arguments");
+			println!("The length of words is not set. Call the program with -wl <len> arguments");
 			return;
 		}
 	}
