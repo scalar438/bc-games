@@ -88,8 +88,8 @@ fn one_game(
 					.chars()
 					.map(|x| match x {
 						'0' => words_chooser::CharResult::NotPresented,
-						'1' => words_chooser::CharResult::NotHere,
-						'2' => words_chooser::CharResult::Here,
+						'1' => words_chooser::CharResult::PartialMatch,
+						'2' => words_chooser::CharResult::FullMatch,
 						_ => unreachable!("Unexpected symbol in the string: {}", s),
 					})
 					.collect();
@@ -109,7 +109,7 @@ fn main() {
 		}
 	}
 	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt")).unwrap();
-	let mut strategy = words_chooser::WordsChooser::new(word_len, &db.words_iter());
+	let mut strategy = words_chooser::WordsChooser::new(word_len, &mut db.words_iter());
 	loop {
 		strategy.init();
 		if !one_game(&mut db, &mut strategy, word_len) {
