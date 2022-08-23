@@ -46,10 +46,10 @@ impl WordsChooser {
 	}
 }
 
-// Calculate all possible answers for the given hidden_word if we try an attempt_word as an attempt
+// Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
 // The main reason why we need returning the vector instead of only one result is a letter repetitions
 // For example, if the hidden word is "abba", and the attempt word is "baaa",
-// the possible answers might "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
+// the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
 // We match either second or third letter to the first "a" of hidden word
 fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult>> {
 	if attempt_word.len() != hidden_word.len() {
@@ -159,5 +159,39 @@ fn test_calc_matching_6() {
 		[0, 1, 2, 1].iter().map(f).collect::<Vec<_>>(),
 		[1, 1, 2, 0].iter().map(f).collect::<Vec<_>>(),
 	];
+	assert_eq!(r, res_expected);
+}
+
+#[test]
+fn test_calc_matching_7() {
+	// Two of "a"-s and one of "b" is PartialMatch
+	let s1 = "ddaaabb";
+	let s2 = "aabcccc";
+
+	let res_expected = vec![
+		[0, 0, 1, 1, 0, 1, 0],
+		[0, 0, 1, 0, 1, 1, 0],
+		[0, 0, 0, 1, 1, 1, 0],
+		[0, 0, 1, 1, 0, 0, 1],
+		[0, 0, 1, 0, 1, 0, 1],
+		[0, 0, 0, 1, 1, 0, 1],
+	];
+	let mut res_expected: Vec<_> = res_expected
+		.into_iter()
+		.map(|arr| {
+			arr.iter()
+				.map(|x| match x {
+					0 => CharResult::NotPresented,
+					1 => CharResult::PartialMatch,
+					2 => CharResult::FullMatch,
+					_ => panic!("Invalid argument: {}", x),
+				})
+				.collect::<Vec<_>>()
+		})
+		.collect();
+	res_expected.sort();
+
+	let mut r = calc_all_answers(s1, s2);
+	r.sort();
 	assert_eq!(r, res_expected);
 }
