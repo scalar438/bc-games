@@ -71,9 +71,14 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 
 	for (attempt_char, mut attempt_pos) in attempt_hash {
 		if let Some(mut hidden_pos) = hidden_hash.remove(&attempt_char) {
-			let mut new_attempt_pos = Vec::new();
-			let mut new_hidden_pos = Vec::new();
+			let old_attempt_pos_len = attempt_pos.len();
+			let old_hidden_pos_len = std::cmp::min(hidden_pos.len(), old_attempt_pos_len);
 
+			// We should remove positions that are also presented in the hidden_pos
+			let mut new_attempt_pos = Vec::new();
+
+			// Both vectors are sorted, so we can compare elements one-by-one by moving the pointers and ignoring equal items
+			// "Pointer" here is just the last element in the vector
 			loop {
 				match (attempt_pos.last(), hidden_pos.last()) {
 					(Some(a), Some(h)) => {
@@ -81,11 +86,11 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 						let vh = *h;
 						if va <= vh {
 							hidden_pos.pop();
-							new_hidden_pos.push(vh);
+						} else {
+							new_attempt_pos.push(va);
 						}
 						if va >= vh {
 							attempt_pos.pop();
-							new_attempt_pos.push(va);
 						}
 						if va == vh {
 							for vec_r in res.iter_mut() {
@@ -102,10 +107,10 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 			new_attempt_pos.append(&mut attempt_pos);
 			attempt_pos = new_attempt_pos;
 
-			new_hidden_pos.append(&mut hidden_pos);
-			hidden_pos = new_hidden_pos;
+			let num_of_matched = old_attempt_pos_len - attempt_pos.len();
+			let num_of_hidden = old_hidden_pos_len - num_of_matched;
 
-			if attempt_pos.len() <= hidden_pos.len() {
+			if attempt_pos.len() <= num_of_hidden {
 				for one_res in res.iter_mut() {
 					for p in attempt_pos.iter() {
 						if one_res[*p] != CharResult::FullMatch {
