@@ -46,6 +46,50 @@ impl WordsChooser {
 	}
 }
 
+// Try to lexicographically increase the given array with the following conditions:
+// 1) Elements in the array are distinct and sorted
+// 2) Elements in the array are less or equal max_val
+// Return true if we have increased the array, otherwise return false
+fn try_increase(arr: &mut [usize], mut max_val: usize) -> bool {
+	let mut i = arr.len();
+	loop {
+		if i == 0 {
+			return false;
+		}
+		i -= 1;
+		if arr[i] == max_val {
+			max_val -= 1;
+		} else {
+			arr[i] += 1;
+			for i in i + 1..arr.len() {
+				arr[i] = arr[i - 1] + 1;
+			}
+			return true;
+		}
+	}
+}
+
+#[test]
+fn test_increase_1() {
+	let mut arr = [1, 2, 3];
+	assert!(try_increase(&mut arr, 4));
+	assert_eq!(arr, [1, 2, 4]);
+}
+
+#[test]
+fn test_increase_2() {
+	let mut arr = [1, 2, 3];
+	assert!(!try_increase(&mut arr, 3));
+}
+
+#[test]
+fn test_increase_3() {
+	let mut arr = [1, 3, 4];
+	assert!(try_increase(&mut arr, 4));
+	assert_eq!(arr, [2, 3, 4]);
+	assert!(!try_increase(&mut arr, 4));
+}
+
 // Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
 // The main reason why we need returning the vector instead of only one result is a letter repetitions
 // For example, if the hidden word is "abba", and the attempt word is "baaa",
