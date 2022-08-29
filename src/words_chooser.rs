@@ -56,36 +56,70 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 		panic!("Cannot compare strings with different lenght")
 	}
 
-	let mut res: Vec<_> = attempt_word
-		.chars()
-		.zip(hidden_word.chars())
-		.map(|(c1, c2)| {
-			if c1 == c2 {
-				CharResult::FullMatch
-			} else {
-				CharResult::NotPresented
-			}
-		})
-		.collect();
-
-	for (i, c1) in attempt_word.char_indices() {
-		if res[i] != CharResult::NotPresented {
-			continue;
+	let make_hash = |x: &str| {
+		let mut h = HashMap::new();
+		for (i, c) in x.chars().enumerate() {
+			h.entry(c).or_insert(Vec::new()).push(i);
 		}
-		for (j, c2) in hidden_word.char_indices() {
-			if j <= i {
-				continue;
+		h
+	};
+
+	let mut res = vec![vec![CharResult::NotPresented; attempt_word.len()]];
+
+	let attempt_hash = make_hash(attempt_word);
+	let mut hidden_hash = make_hash(hidden_word);
+
+	for (attempt_char, mut attempt_pos) in attempt_hash {
+		if let Some(mut hidden_pos) = hidden_hash.remove(&attempt_char) {
+			let mut new_attempt_pos = Vec::new();
+			let mut new_hidden_pos = Vec::new();
+
+			loop {
+				match (attempt_pos.last(), hidden_pos.last()) {
+					(Some(a), Some(h)) => {
+						let va = *a;
+						let vh = *h;
+						if va <= vh {
+							hidden_pos.pop();
+							new_hidden_pos.push(vh);
+						}
+						if va >= vh {
+							attempt_pos.pop();
+							new_attempt_pos.push(va);
+						}
+						if va == vh {
+							for vec_r in res.iter_mut() {
+								vec_r[va] = CharResult::FullMatch;
+							}
+						}
+					}
+					(_, _) => {
+						break;
+					}
+				}
 			}
-			if res[j] != CharResult::NotPresented {
-				continue;
-			}
-			if c1 == c2 {
-				res[i] = CharResult::PartialMatch;
-				res[j] = CharResult::PartialMatch;
+
+			new_attempt_pos.append(&mut attempt_pos);
+			attempt_pos = new_attempt_pos;
+
+			new_hidden_pos.append(&mut hidden_pos);
+			hidden_pos = new_hidden_pos;
+
+			if attempt_pos.len() <= hidden_pos.len() {
+				for one_res in res.iter_mut() {
+					for p in attempt_pos.iter() {
+						if one_res[*p] != CharResult::FullMatch {
+							one_res[*p] = CharResult::PartialMatch;
+						}
+					}
+				}
+			} else {
+				let end_index = res.len();
 			}
 		}
 	}
-	vec![res]
+
+	res
 }
 
 #[test]
