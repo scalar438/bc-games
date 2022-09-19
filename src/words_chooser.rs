@@ -1,47 +1,83 @@
-use std::{collections::HashMap};
+use std::{collections::HashMap, hash::Hash};
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum CharResult {
 	NotPresented,
 	PartialMatch,
 	FullMatch,
 }
 
+#[derive(PartialEq)]
+enum ChoiseState {
+	ReadyToMakeGuess,
+	WaitForRespond,
+	NoMoreWords,
+}
+
 pub struct WordsChooser {
 	vocabulary: Vec<String>,
-	matched_words: Vec<String>,
-	word_len: usize,
+	suitable_words: Vec<String>,
+	next_variants: HashMap<Vec<CharResult>, String>,
+	state: ChoiseState,
 }
 
 impl WordsChooser {
-	pub fn new<T: AsRef<str>>(
-		word_len: usize,
-		all_words: &mut dyn Iterator<Item = &T>,
-	) -> WordsChooser {
+	pub fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> WordsChooser {
 		WordsChooser {
 			vocabulary: all_words.map(|x| x.as_ref().to_owned()).collect(),
-			matched_words: Vec::new(),
-			word_len,
+			suitable_words: Vec::new(),
+			next_variants: HashMap::new(),
+			state: ChoiseState::ReadyToMakeGuess,
 		}
 	}
 
 	pub fn init(&mut self) {
-		self.matched_words = self.vocabulary.clone();
-		unimplemented!()
+		self.suitable_words = self.vocabulary.clone();
+		self.state = ChoiseState::ReadyToMakeGuess;
 	}
 
-	pub fn make_guess(&self) -> Option<&str> {
-		if self.matched_words.len() == 0 {
+	pub fn make_guess(&mut self) -> Option<&str> {
+		if self.state != ChoiseState::ReadyToMakeGuess {
+			panic!("Cannot make guess, invalid state")
+		}
+		if self.suitable_words.len() == 0 {
+			self.state = ChoiseState::NoMoreWords;
 			return None;
 		}
-		unimplemented!()
+		let mut all_variants = std::collections::HashMap::new();
+		let mut max_val = usize::MAX;
+		let mut res_attempt_word = "";
+		for attempt_word in self.vocabulary.iter() {
+			let mut all_variants_tmp = std::collections::HashMap::new();
+			let mut max_val_tmp = 0;
+			for hidden_word in self.suitable_words.iter() {
+				for res in calc_all_answers(attempt_word, hidden_word) {
+					let v = all_variants_tmp.entry(res).or_insert(Vec::new());
+					v.push(attempt_word);
+					max_val_tmp = std::cmp::max(v.len(), max_val_tmp);
+				}
+			}
+			if max_val_tmp < max_val {
+				max_val = max_val_tmp;
+				all_variants = all_variants_tmp;
+				res_attempt_word = &(*attempt_word);
+			}
+		}
+
+		self.next_variants = all_variants
+			.drain()
+			.map(|(k, v)| (k, v.into_iter().map(|x| x.clone()).collect()))
+			.collect();
+
+		self.state = ChoiseState::WaitForRespond;
+		Some(res_attempt_word)
 	}
 
 	pub fn respond_to_guess(&mut self, respond: &[CharResult]) {
 		unimplemented!()
 	}
 
-	pub fn add_word_to_list<T: AsRef<str>>(&mut self, word: T) {
+	pub fn add_word_to_list_and_make_attempt<T: AsRef<str>>(&mut self, word: T) {
 		unimplemented!()
 	}
 }

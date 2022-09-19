@@ -58,7 +58,7 @@ fn one_game(
 						break s.to_owned();
 					}
 				};
-				strategy.add_word_to_list(&user_attempt);
+				strategy.add_word_to_list_and_make_attempt(&user_attempt);
 				db.add_word(&user_attempt);
 			}
 		}
@@ -109,7 +109,7 @@ fn main() {
 		}
 	}
 	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt")).unwrap();
-	let mut strategy = words_chooser::WordsChooser::new(word_len, &mut db.words_iter());
+	let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
 	loop {
 		strategy.init();
 		if !one_game(&mut db, &mut strategy, word_len) {
