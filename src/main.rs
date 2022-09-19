@@ -1,5 +1,4 @@
 use std::env;
-pub mod comb_utils;
 mod db_reader;
 mod words_chooser;
 

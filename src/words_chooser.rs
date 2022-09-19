@@ -1,5 +1,4 @@
-use super::comb_utils;
-use std::{collections::HashMap, iter::repeat};
+use std::{collections::HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
 pub enum CharResult {
