@@ -1,4 +1,5 @@
 use std::env;
+pub mod comb_utils;
 mod db_reader;
 mod words_chooser;
 
@@ -100,7 +101,11 @@ fn one_game(
 }
 
 fn main() {
-	let word_len;
+	let q = vec![1, 2, 3, 4];
+
+	for i in &q[0..2] {}
+
+	/*let word_len;
 	match get_word_len() {
 		Some(w) => word_len = w,
 		None => {
@@ -115,5 +120,5 @@ fn main() {
 		if !one_game(&mut db, &mut strategy, word_len) {
 			break;
 		}
-	}
+	}*/
 }
