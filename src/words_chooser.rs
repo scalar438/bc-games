@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use super::comb_utils;
+use std::{collections::HashMap, iter::repeat};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
 pub enum CharResult {
@@ -163,7 +164,22 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 					}
 				}
 			} else {
-				let end_index = res.len();
+				let mut tmp_res = Vec::new();
+				let mut yellow_positions: Vec<_> = (0..num_of_hidden).collect();
+
+				loop {
+					for prev in res.iter() {
+						let mut np = prev.clone();
+						for v in yellow_positions.iter() {
+							np[attempt_pos[*v]] = CharResult::PartialMatch;
+						}
+						tmp_res.push(np);
+					}
+					if !try_increase(&mut yellow_positions, attempt_pos.len() - 1) {
+						break;
+					}
+				}
+				res = tmp_res;
 			}
 		}
 	}
