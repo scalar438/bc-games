@@ -157,7 +157,7 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 			// We should remove positions that are also presented in the hidden_pos
 			let mut new_attempt_pos = Vec::new();
 
-			// Both vectors are sorted, so we can compare elements one-by-one by moving the pointers and ignoring equal items
+			// Both vectors are sorted, so we can compare elements one-by-one by moving pointers and ignoring equal items
 			// "Pointer" here is just the last element in the vector
 			loop {
 				match (attempt_pos.last(), hidden_pos.last()) {
