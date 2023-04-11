@@ -100,7 +100,7 @@ mod test {
 		let fname = std::path::Path::new("./test_create_db");
 		if fname.exists() {
 			panic!(
-				"The file/folder {:?} is exists before the running tests!",
+				"The file/folder {:?} is exists before running tests!",
 				fname
 			);
 		}
@@ -141,7 +141,7 @@ mod test {
 		let fname = std::path::Path::new("./test_read_and_write_db");
 		if fname.exists() {
 			panic!(
-				"The file/folder {:?} is exists before the running tests!",
+				"The file/folder {:?} is exists before running tests!",
 				fname
 			);
 		}
