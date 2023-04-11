@@ -104,7 +104,7 @@ fn main() {
 	match get_word_len() {
 		Some(w) => word_len = w,
 		None => {
-			println!("The length of words is not set. Call the program with -wl <len> arguments");
+			println!("The length of words is not set. Call the program with -wl <len> arguments. Len should be between 4 and 8");
 			return;
 		}
 	}
