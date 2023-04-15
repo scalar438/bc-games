@@ -127,7 +127,7 @@ fn test_increase_3() {
 }
 
 // Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
-// The main reason why we need returning the vector instead of only one result is a letter repetitions
+// The main reason why we need to return vector instead of only one result is a letter repetitions
 // For example, if the hidden word is "abba", and the attempt word is "baaa",
 // the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
 // We match either second or third letter to the first "a" of hidden word

@@ -3,7 +3,14 @@ mod db_reader;
 mod input_getter;
 mod words_chooser;
 
-use input_getter::{Command, Input};
+use input_getter::{Command, Input, InputGetter};
+
+use crate::words_chooser::CharResult;
+
+enum BotRunResult {
+	BotLost,
+	ExitByCommand(Command),
+}
 
 fn get_word_len() -> Option<usize> {
 	let mut word_len_arg = false;
@@ -27,15 +34,15 @@ fn get_word_len() -> Option<usize> {
 
 fn bot_game(
 	strategy: &mut words_chooser::WordsChooser,
-	input_getter: input_getter::InputGetter,
-) -> std::io::Result<()> {
+	input_getter: &input_getter::InputGetter,
+) -> std::io::Result<BotRunResult> {
 	loop {
 		match strategy.make_guess() {
 			Some(word) => {
 				println!("My attempt: {}", word);
 			}
 			None => {
-				return Ok(());
+				return Ok(BotRunResult::BotLost);
 			}
 		}
 
@@ -43,11 +50,12 @@ fn bot_game(
 
 		match ans {
 			Input::Value(v) => {
+				if v.iter().all(|x| x == &CharResult::FullMatch) {
+					todo!("Bot won, do smth");
+				}
 				strategy.respond_to_guess(&v);
 			}
-			Input::Cmd(_) => {
-				todo!("Do a command")
-			}
+			Input::Cmd(c) => return Ok(BotRunResult::ExitByCommand(c)),
 		}
 	}
 }
@@ -57,74 +65,44 @@ fn one_game(
 	db: &mut db_reader::WordsDb,
 	strategy: &mut words_chooser::WordsChooser,
 	word_len: usize,
-) -> bool {
-	let mut game_over = false;
-	loop {
-		// Type or get a word as a new attempt
-		match strategy.make_guess() {
-			Some(x) => {
-				println!("My attempt: {}", x);
-			}
-			None => {
-				if !game_over {
-					println!("My game is over. Finish the game instead of me");
-					game_over = true;
-				}
+) -> std::io::Result<bool> {
+	let input_getter = InputGetter::new(word_len);
+	let bot_result = bot_game(strategy, &input_getter)?;
 
-				let user_attempt = loop {
-					print!("Your attempt: ");
-					let mut s = String::new();
-					std::io::stdin().read_line(&mut s).unwrap();
-					let s = s.trim();
-					if s == "-quit" {
-						return false;
-					}
-					if s == "-stop" {
-						return true;
-					}
-					if s.len() != word_len {
-						println!("Invalid length of word. In this game you have to use words contain {} symbols", word_len);
-					} else {
-						break s.to_owned();
-					}
-				};
-				strategy.add_word_to_list_and_make_attempt(&user_attempt);
-				db.add_word(&user_attempt);
+	if let BotRunResult::ExitByCommand(c) = &bot_result {
+		match c {
+			Command::Quit => return Ok(false),
+			Command::StopGame => return Ok(true),
+		}
+	}
+
+	println!("Bot lost. Finish the game for bot. Next time it will know more words");
+
+	loop {
+		print!("Your attempt: ");
+		match input_getter.get_word()? {
+			Input::Cmd(c) => match c {
+				Command::Quit => return Ok(false),
+				Command::StopGame => return Ok(true),
+			},
+
+			Input::Value(s) => {
+				db.add_word(&s);
 			}
 		}
 
-		// Make the answer, if it was a bot attempt
-		if !game_over {
-			let answer_vec: Vec<_> = loop {
-				print!("Result of that attempt: ");
-				let mut s = String::new();
-				std::io::stdin().read_line(&mut s).unwrap();
-				let s = s.trim();
-				if s == "-quit" {
-					return false;
+		print!("Response to your attempt: ");
+		match input_getter.get_response_vector()? {
+			Input::Cmd(c) => match c {
+				Command::Quit => return Ok(false),
+				Command::StopGame => return Ok(true),
+			},
+
+			Input::Value(v) => {
+				if v.iter().all(|x| x == &CharResult::FullMatch) {
+					todo!("You won, do smth");
 				}
-				if s == "-stop" {
-					return true;
-				}
-				if s.len() != word_len {
-					println!("Invalid length of word. In this game you have to use words contain {} symbols", word_len);
-					continue;
-				}
-				if s.chars().any(|x| x != '0' || x != '1' || x != '2') {
-					print!("The string contains forbidden symbol. Use can use just 0, 1 and 2 as answer");
-					continue;
-				}
-				break s
-					.chars()
-					.map(|x| match x {
-						'0' => words_chooser::CharResult::NotPresented,
-						'1' => words_chooser::CharResult::PartialMatch,
-						'2' => words_chooser::CharResult::FullMatch,
-						_ => unreachable!("Unexpected symbol in the string: {}", s),
-					})
-					.collect();
-			};
-			strategy.respond_to_guess(&answer_vec);
+			}
 		}
 	}
 }
@@ -142,7 +120,7 @@ fn main() {
 	let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
 	loop {
 		strategy.init();
-		if !one_game(&mut db, &mut strategy, word_len) {
+		if !one_game(&mut db, &mut strategy, word_len).unwrap() {
 			break;
 		}
 	}
