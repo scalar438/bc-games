@@ -1,5 +1,6 @@
 use std::env;
 mod db_reader;
+mod input_getter;
 mod words_chooser;
 
 fn get_word_len() -> Option<usize> {
