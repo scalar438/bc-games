@@ -3,6 +3,8 @@ mod db_reader;
 mod input_getter;
 mod words_chooser;
 
+use input_getter::{Command, Input};
+
 fn get_word_len() -> Option<usize> {
 	let mut word_len_arg = false;
 	for arg in env::args() {
@@ -21,6 +23,33 @@ fn get_word_len() -> Option<usize> {
 		}
 	}
 	return None;
+}
+
+fn bot_game(
+	strategy: &mut words_chooser::WordsChooser,
+	input_getter: input_getter::InputGetter,
+) -> std::io::Result<()> {
+	loop {
+		match strategy.make_guess() {
+			Some(word) => {
+				println!("My attempt: {}", word);
+			}
+			None => {
+				return Ok(());
+			}
+		}
+
+		let ans = input_getter.get_response_vector()?;
+
+		match ans {
+			Input::Value(v) => {
+				strategy.respond_to_guess(&v);
+			}
+			Input::Cmd(_) => {
+				todo!("Do a command")
+			}
+		}
+	}
 }
 
 // Return true if you want to continue

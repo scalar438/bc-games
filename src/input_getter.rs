@@ -1,11 +1,11 @@
 use super::words_chooser::CharResult;
 
-enum Command {
+pub enum Command {
 	StopGame, // Stop the current game, starn new
 	Quit,     // Stop the current game and quit
 }
 
-enum Input<T> {
+pub enum Input<T> {
 	Value(T),
 	Cmd(Command),
 }
@@ -87,7 +87,7 @@ impl InputGetter {
 		} else if s == "-stop" {
 			Ok(Input::Cmd(Command::StopGame))
 		} else {
-			Ok(Input::Value(s))
+			Ok(Input::Value(s.trim().to_owned()))
 		}
 	}
 }
