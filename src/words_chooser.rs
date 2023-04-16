@@ -76,10 +76,6 @@ impl WordsChooser {
 	pub fn respond_to_guess(&mut self, respond: &[CharResult]) {
 		unimplemented!()
 	}
-
-	pub fn add_word_to_list_and_make_attempt<T: AsRef<str>>(&mut self, word: T) {
-		unimplemented!()
-	}
 }
 
 // Try to lexicographically increase the given array with the following conditions:
