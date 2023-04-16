@@ -78,7 +78,7 @@ impl WordsChooser {
 	}
 }
 
-// Try to lexicographically increase the given array with the following conditions:
+// Try to increase lexicographically the given array with following conditions:
 // 1) Elements in the array are distinct and sorted
 // 2) Elements in the array are less or equal max_val
 // Return true if we have increased the array, otherwise return false
