@@ -116,7 +116,7 @@ fn main() {
 			return;
 		}
 	}
-	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt")).unwrap();
+	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt"), word_len).unwrap();
 	let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
 	loop {
 		strategy.init();
