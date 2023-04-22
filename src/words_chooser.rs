@@ -16,17 +16,17 @@ enum ChoiseState {
 
 pub struct WordsChooser {
 	vocabulary: Vec<String>,
-	suitable_words: Vec<String>,
+	candidate_words: Vec<String>,
 	next_variants: HashMap<Vec<CharResult>, Vec<String>>,
 	state: ChoiseState,
 }
 
 impl WordsChooser {
 	pub fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> WordsChooser {
-		let tmp_vec:Vec<_> = all_words.map(|x| x.as_ref().to_owned()).collect();
+		let tmp_vec: Vec<_> = all_words.map(|x| x.as_ref().to_owned()).collect();
 		WordsChooser {
 			vocabulary: tmp_vec.clone(),
-			suitable_words: tmp_vec,
+			candidate_words: tmp_vec,
 			next_variants: HashMap::new(),
 			state: ChoiseState::ReadyToMakeGuess,
 		}
@@ -36,7 +36,7 @@ impl WordsChooser {
 		if self.state != ChoiseState::ReadyToMakeGuess {
 			panic!("Cannot make guess, invalid state")
 		}
-		if self.suitable_words.len() == 0 {
+		if self.candidate_words.len() == 0 {
 			self.state = ChoiseState::NoMoreWords;
 			return None;
 		}
@@ -46,7 +46,7 @@ impl WordsChooser {
 		for attempt_word in self.vocabulary.iter() {
 			let mut all_variants_tmp = std::collections::HashMap::new();
 			let mut max_val_tmp = 0;
-			for hidden_word in self.suitable_words.iter() {
+			for hidden_word in self.candidate_words.iter() {
 				for res in calc_all_answers(attempt_word, hidden_word) {
 					let v = all_variants_tmp.entry(res).or_insert(Vec::new());
 					v.push(attempt_word);
@@ -74,9 +74,9 @@ impl WordsChooser {
 			panic!("Unexpected state: {:?}", self.state);
 		}
 		if let Some(next) = self.next_variants.remove(respond) {
-			self.suitable_words = next;
+			self.candidate_words = next;
 		} else {
-			self.suitable_words.clear();
+			self.candidate_words.clear();
 		}
 		self.next_variants.clear();
 		self.state = ChoiseState::ReadyToMakeGuess;
