@@ -2,10 +2,8 @@ use std::env;
 mod db_reader;
 mod input_getter;
 mod words_chooser;
-
-use input_getter::{Command, Input, InputGetter};
-
 use crate::words_chooser::CharResult;
+use input_getter::{Command, Input, InputGetter};
 
 enum BotRunResult {
 	BotLost,
@@ -49,7 +47,7 @@ fn bot_game(
 			}
 		}
 
-		let ans = input_getter.get_response_vector(Some(&cur_word))?;
+		let ans = input_getter.get_response_vector(Some(&cur_word), "Your attempt: ")?;
 
 		match ans {
 			Input::Value(v) => {
@@ -85,9 +83,8 @@ fn one_game(
 	}
 
 	loop {
-		print!("Your attempt: ");
 		let cur_word;
-		match input_getter.get_word()? {
+		match input_getter.get_word("Your attempt: ")? {
 			Input::Cmd(c) => match c {
 				Command::Quit => return Ok(false),
 				Command::StopGame => return Ok(true),
@@ -99,8 +96,7 @@ fn one_game(
 			}
 		}
 
-		print!("Response to your attempt: ");
-		match input_getter.get_response_vector(Some(cur_word))? {
+		match input_getter.get_response_vector(Some(cur_word), "Response to your attempt: ")? {
 			Input::Cmd(c) => match c {
 				Command::Quit => return Ok(false),
 				Command::StopGame => return Ok(true),

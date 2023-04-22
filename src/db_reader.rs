@@ -29,7 +29,7 @@ impl WordsDb {
 		for line in std::io::BufReader::new(f).lines() {
 			let line = line?;
 			let line = line.trim();
-			if line.len() == word_len {
+			if line.chars().count() == word_len {
 				words.push(line.to_string());
 			}
 		}
@@ -43,7 +43,7 @@ impl WordsDb {
 
 	pub fn add_word(&mut self, word: &str) {
 		let word = word.trim();
-		if word.len() != self.word_current_len {
+		if word.chars().count() != self.word_current_len {
 			panic!("Invalid word len");
 		}
 		self.new_words.push(word.to_lowercase());

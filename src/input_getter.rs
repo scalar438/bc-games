@@ -1,5 +1,6 @@
 use super::words_chooser::CharResult;
 use colored::Colorize;
+use std::io::Write;
 
 pub enum Command {
 	StopGame, // Stop the current game, starn new
@@ -54,16 +55,19 @@ impl InputGetter {
 		InputGetter { word_len }
 	}
 
-	pub fn get_word(&self) -> InputResult<String> {
+	pub fn get_word<T: AsRef<str>>(&self, msg: T) -> InputResult<String> {
 		loop {
+			print!("{0}", msg.as_ref());
+			std::io::stdout().flush()?;
 			let r = Self::get_str_or_command();
 
 			if let Ok(Input::Value(s)) = &r {
-				if s.len() != self.word_len {
+				if s.chars().count() != self.word_len {
 					println!(
-					"Invalid length of word. In this game you have to use words contain {} symbols",
-					self.word_len
-				);
+						"Invalid length of word. In this game you have to use words contain {} symbols",
+						self.word_len
+					);
+				
 					continue;
 				}
 			}
@@ -72,25 +76,29 @@ impl InputGetter {
 		}
 	}
 
-	pub fn get_response_vector<T: AsRef<str>>(
+	pub fn get_response_vector<TA: AsRef<str>, TM: AsRef<str>>(
 		&self,
-		attempt_word: Option<T>,
+		attempt_word: Option<TA>,
+		msg: TM,
 	) -> InputResult<Vec<CharResult>> {
 		if let Some(x) = &attempt_word {
-			if x.as_ref().len() != self.word_len {
-				panic!("Argoment attempt_word should be equal to self.word_len!");
+			if x.as_ref().chars().count() != self.word_len {
+				panic!("Length of attempt_word should be equal to self.word_len!");
 			}
 		}
 		loop {
+			print!("{0}", msg.as_ref());
+			std::io::stdout().flush()?;
+
 			let r = Self::get_str_or_command()?;
 
 			match r {
 				Input::Value(s) => {
-					if s.len() != self.word_len {
+					if s.chars().count() != self.word_len {
 						println!(
-						"Invalid length of word. In this game you have to use words contain {} symbols",
-						self.word_len
-					);
+							"Invalid length of word. In this game you have to use words contain {} symbols", 
+							self.word_len
+						);
 						continue;
 					}
 
@@ -114,7 +122,6 @@ impl InputGetter {
 						if is_accepted(&tmp_vec)? {
 							return Ok(Input::Value(vec_res));
 						} else {
-							println!("Another attempt");
 							continue;
 						}
 					}
@@ -130,13 +137,14 @@ impl InputGetter {
 		let mut s = String::new();
 
 		std::io::stdin().read_line(&mut s)?;
+		let s = s.trim();
 
 		if s == "-quit" {
 			Ok(Input::Cmd(Command::Quit))
 		} else if s == "-stop" {
 			Ok(Input::Cmd(Command::StopGame))
 		} else {
-			Ok(Input::Value(s.trim().to_owned()))
+			Ok(Input::Value(s.trim().to_owned().to_lowercase()))
 		}
 	}
 }
