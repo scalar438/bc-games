@@ -18,12 +18,13 @@ pub struct InputGetter {
 	word_len: usize,
 }
 
-fn print_colored(s: &str, cr: CharResult) -> colored::ColoredString {
-	match cr {
+fn print_colored(s: &str, cr: CharResult) {
+	let s = match cr {
 		CharResult::NotPresented => s.white(),
 		CharResult::PartialMatch => s.yellow(),
 		CharResult::FullMatch => s.green(),
-	}
+	};
+	print!("{0}", s);
 }
 
 fn is_accepted(colored_str: &Vec<(char, &CharResult)>) -> std::io::Result<bool> {
@@ -32,22 +33,22 @@ fn is_accepted(colored_str: &Vec<(char, &CharResult)>) -> std::io::Result<bool> 
 	print!("Answer is ");
 
 	for (c, cr) in colored_str {
-		if let Some(ref mut prev) = prev {
-			if prev != *cr {
-				print_colored(&s, *prev);
-				s.clear();
-				*prev = **cr;
-			} else {
-				s.push(*c);
+		if prev != Some(**cr) {
+			if let Some(prev) = prev {
+				print_colored(&s, prev);
 			}
-		} else {
+			s.clear();
+
 			prev = Some(**cr);
 		}
+		s.push(*c);
 	}
 	if !s.is_empty() {
 		print_colored(&s, prev.unwrap());
 	}
-	dialoguer::Confirm::new().with_prompt("?").interact()
+	print!("?");
+	std::io::stdout().flush()?;
+	dialoguer::Confirm::new().interact()
 }
 
 impl InputGetter {
@@ -67,7 +68,7 @@ impl InputGetter {
 						"Invalid length of word. In this game you have to use words contain {} symbols",
 						self.word_len
 					);
-				
+
 					continue;
 				}
 			}
@@ -102,8 +103,8 @@ impl InputGetter {
 						continue;
 					}
 
-					if s.chars().any(|x| x != '0' || x != '1' || x != '2') {
-						println!("This string contains forbidden symbol. Use can use just 0, 1 and 2 as answer");
+					if s.chars().any(|x| x != '0' && x != '1' && x != '2') {
+						println!("This string contains forbidden symbol(s). Use can use just 0, 1 and 2 as answer");
 						continue;
 					}
 
