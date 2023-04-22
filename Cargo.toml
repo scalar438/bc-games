@@ -4,5 +4,9 @@ version = "0.1.0"
 authors = ["as.larin@hotmail.com"]
 edition = "2021"
 
+[dependencies]
+colored = "2"
+dialoguer = "0.10"
+
 [dev-dependencies]
-tempfile ="3"
+tempfile = "3"

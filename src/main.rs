@@ -38,16 +38,18 @@ fn bot_game(
 	input_getter: &input_getter::InputGetter,
 ) -> std::io::Result<BotRunResult> {
 	loop {
+		let cur_word;
 		match strategy.make_guess() {
 			Some(word) => {
 				println!("My attempt: {}", word);
+				cur_word = word.to_owned();
 			}
 			None => {
 				return Ok(BotRunResult::BotLost);
 			}
 		}
 
-		let ans = input_getter.get_response_vector()?;
+		let ans = input_getter.get_response_vector(Some(&cur_word))?;
 
 		match ans {
 			Input::Value(v) => {
@@ -84,6 +86,7 @@ fn one_game(
 
 	loop {
 		print!("Your attempt: ");
+		let cur_word;
 		match input_getter.get_word()? {
 			Input::Cmd(c) => match c {
 				Command::Quit => return Ok(false),
@@ -92,11 +95,12 @@ fn one_game(
 
 			Input::Value(s) => {
 				db.add_word(&s);
+				cur_word = s;
 			}
 		}
 
 		print!("Response to your attempt: ");
-		match input_getter.get_response_vector()? {
+		match input_getter.get_response_vector(Some(cur_word))? {
 			Input::Cmd(c) => match c {
 				Command::Quit => return Ok(false),
 				Command::StopGame => return Ok(true),

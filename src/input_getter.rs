@@ -1,4 +1,5 @@
 use super::words_chooser::CharResult;
+use colored::Colorize;
 
 pub enum Command {
 	StopGame, // Stop the current game, starn new
@@ -14,6 +15,38 @@ pub type InputResult<T> = std::io::Result<Input<T>>;
 
 pub struct InputGetter {
 	word_len: usize,
+}
+
+fn print_colored(s: &str, cr: CharResult) -> colored::ColoredString {
+	match cr {
+		CharResult::NotPresented => s.white(),
+		CharResult::PartialMatch => s.yellow(),
+		CharResult::FullMatch => s.green(),
+	}
+}
+
+fn is_accepted(colored_str: &Vec<(char, &CharResult)>) -> std::io::Result<bool> {
+	let mut prev = None;
+	let mut s = String::new();
+	print!("Answer is ");
+
+	for (c, cr) in colored_str {
+		if let Some(ref mut prev) = prev {
+			if prev != *cr {
+				print_colored(&s, *prev);
+				s.clear();
+				*prev = **cr;
+			} else {
+				s.push(*c);
+			}
+		} else {
+			prev = Some(**cr);
+		}
+	}
+	if !s.is_empty() {
+		print_colored(&s, prev.unwrap());
+	}
+	dialoguer::Confirm::new().with_prompt("?").interact()
 }
 
 impl InputGetter {
@@ -39,7 +72,15 @@ impl InputGetter {
 		}
 	}
 
-	pub fn get_response_vector(&self) -> InputResult<Vec<CharResult>> {
+	pub fn get_response_vector<T: AsRef<str>>(
+		&self,
+		attempt_word: Option<T>,
+	) -> InputResult<Vec<CharResult>> {
+		if let Some(x) = &attempt_word {
+			if x.as_ref().len() != self.word_len {
+				panic!("Argoment attempt_word should be equal to self.word_len!");
+			}
+		}
 		loop {
 			let r = Self::get_str_or_command()?;
 
@@ -54,7 +95,7 @@ impl InputGetter {
 					}
 
 					if s.chars().any(|x| x != '0' || x != '1' || x != '2') {
-						print!("This string contains forbidden symbol. Use can use just 0, 1 and 2 as answer");
+						println!("This string contains forbidden symbol. Use can use just 0, 1 and 2 as answer");
 						continue;
 					}
 
@@ -68,7 +109,15 @@ impl InputGetter {
 						})
 						.collect();
 
-					return Ok(Input::Value(vec_res));
+					if let Some(attempt_word) = &attempt_word {
+						let tmp_vec = attempt_word.as_ref().chars().zip(vec_res.iter()).collect();
+						if is_accepted(&tmp_vec)? {
+							return Ok(Input::Value(vec_res));
+						} else {
+							println!("Another attempt");
+							continue;
+						}
+					}
 				}
 				Input::Cmd(cmd) => {
 					return Ok(Input::Cmd(cmd));
