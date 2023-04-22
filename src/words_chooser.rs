@@ -7,7 +7,7 @@ pub enum CharResult {
 	FullMatch,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum ChoiseState {
 	ReadyToMakeGuess,
 	WaitForRespond,
@@ -17,7 +17,7 @@ enum ChoiseState {
 pub struct WordsChooser {
 	vocabulary: Vec<String>,
 	suitable_words: Vec<String>,
-	next_variants: HashMap<Vec<CharResult>, String>,
+	next_variants: HashMap<Vec<CharResult>, Vec<String>>,
 	state: ChoiseState,
 }
 
@@ -69,7 +69,16 @@ impl WordsChooser {
 	}
 
 	pub fn respond_to_guess(&mut self, respond: &[CharResult]) {
-		unimplemented!()
+		if self.state != ChoiseState::WaitForRespond {
+			panic!("Unexpected state: {:?}", self.state);
+		}
+		if let Some(next) = self.next_variants.remove(respond) {
+			self.suitable_words = next;
+		} else {
+			self.suitable_words.clear();
+		}
+		self.next_variants.clear();
+		self.state = ChoiseState::ReadyToMakeGuess;
 	}
 }
 
