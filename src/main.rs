@@ -9,6 +9,7 @@ use crate::words_chooser::CharResult;
 
 enum BotRunResult {
 	BotLost,
+	BotWon,
 	ExitByCommand(Command),
 }
 
@@ -51,7 +52,7 @@ fn bot_game(
 		match ans {
 			Input::Value(v) => {
 				if v.iter().all(|x| x == &CharResult::FullMatch) {
-					todo!("Bot won, do smth");
+					return Ok(BotRunResult::BotWon);
 				}
 				strategy.respond_to_guess(&v);
 			}
@@ -69,14 +70,17 @@ fn one_game(
 	let input_getter = InputGetter::new(word_len);
 	let bot_result = bot_game(strategy, &input_getter)?;
 
-	if let BotRunResult::ExitByCommand(c) = &bot_result {
-		match c {
-			Command::Quit => return Ok(false),
-			Command::StopGame => return Ok(true),
+	match bot_result {
+		BotRunResult::ExitByCommand(Command::Quit) => return Ok(false),
+		BotRunResult::ExitByCommand(Command::StopGame) => return Ok(true),
+		BotRunResult::BotWon => {
+			println!("Bot won. Run the next game");
+			return Ok(true);
+		}
+		BotRunResult::BotLost => {
+			println!("Bot lost. Finish the game for bot. Next time it will know more words");
 		}
 	}
-
-	println!("Bot lost. Finish the game for bot. Next time it will know more words");
 
 	loop {
 		print!("Your attempt: ");
@@ -100,7 +104,8 @@ fn one_game(
 
 			Input::Value(v) => {
 				if v.iter().all(|x| x == &CharResult::FullMatch) {
-					todo!("You won, do smth");
+					println!("You won!");
+					return Ok(true);
 				}
 			}
 		}
@@ -117,11 +122,15 @@ fn main() {
 		}
 	}
 	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt"), word_len).unwrap();
-	let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
 	loop {
-		strategy.init();
+		let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
+
 		if !one_game(&mut db, &mut strategy, word_len).unwrap() {
 			break;
+		}
+		if let Err(e) = db.flush() {
+			println!("Unextected error: {0}", e);
+			return;
 		}
 	}
 }

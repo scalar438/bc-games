@@ -53,7 +53,7 @@ impl WordsDb {
 		self.words.iter().chain(self.new_words.iter())
 	}
 
-	fn flush(&mut self) -> std::io::Result<()> {
+	pub fn flush(&mut self) -> std::io::Result<()> {
 		let mut all_words: Vec<_> = self
 			.words
 			.iter()
