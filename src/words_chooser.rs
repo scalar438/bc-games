@@ -23,9 +23,10 @@ pub struct WordsChooser {
 
 impl WordsChooser {
 	pub fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> WordsChooser {
+		let tmp_vec:Vec<_> = all_words.map(|x| x.as_ref().to_owned()).collect();
 		WordsChooser {
-			vocabulary: all_words.map(|x| x.as_ref().to_owned()).collect(),
-			suitable_words: Vec::new(),
+			vocabulary: tmp_vec.clone(),
+			suitable_words: tmp_vec,
 			next_variants: HashMap::new(),
 			state: ChoiseState::ReadyToMakeGuess,
 		}
