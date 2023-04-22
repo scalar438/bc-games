@@ -31,11 +31,6 @@ impl WordsChooser {
 		}
 	}
 
-	pub fn init(&mut self) {
-		self.suitable_words = self.vocabulary.clone();
-		self.state = ChoiseState::ReadyToMakeGuess;
-	}
-
 	pub fn make_guess(&mut self) -> Option<&str> {
 		if self.state != ChoiseState::ReadyToMakeGuess {
 			panic!("Cannot make guess, invalid state")
