@@ -426,3 +426,47 @@ fn test_one_choise() {
 	let attempt2 = w.make_guess().unwrap();
 	assert_ne!(attempt1, attempt2);
 }
+
+// In this test is most sensible choise as the first attempt is "abc" or "cbg"
+// If we chose "bde", one of the possible answers is "100" is matched with two words - "fcb" and "abc",
+// so we have to guess between them if we get this answer
+// By the same reason, the word "fcb" and "011" as answer tells us the possible word either "abc" or "cbg"
+// For the word "abc" we have three possbile answers (in assumption that our attempt isn't correct):
+//    "010" tells as that word is "bde",
+//    "011" - "fcb",
+//    "021" - "cbg",
+// Because we have no possible answers with more than one words, it is better than previous ones
+// The "cbg" is a good choise too:
+//    "010" - "bde"
+//    "110" - "fcb"
+//    "120" - "abc"
+#[test]
+fn test_smartest_choise() {
+	let vocabulary: Vec<_> = ["bde", "fcb", "abc", "cbg"]
+		.iter()
+		.map(|x| x.to_string())
+		.collect();
+	let candidate_words = vocabulary.clone();
+	let mut w = WordsChooser {
+		words_container: WordsContainer {
+			vocabulary,
+			candidate_words,
+		},
+		next_variants: HashMap::new(),
+		state: ChoiseState::ReadyToMakeGuess,
+	};
+
+	let attempt1 = w.make_guess().unwrap();
+	// Check for the best options
+	assert!(attempt1 == "abc" || attempt1 == "cbg");
+
+	// Let's assume we picked "bde". In this case the answer is "010" regardles of an attempt
+	w.respond_to_guess(&[
+		CharResult::NotPresented,
+		CharResult::PartialMatch,
+		CharResult::NotPresented,
+	]);
+
+	assert_eq!(w.words_container.candidate_words.len(), 1);
+	assert_eq!(w.make_guess().unwrap(), "bde");
+}
