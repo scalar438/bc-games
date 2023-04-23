@@ -176,7 +176,7 @@ fn test_increase_3() {
 // the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
 // We match either second or third letter to the first "a" of hidden word
 fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult>> {
-	if attempt_word.len() != hidden_word.len() {
+	if attempt_word.chars().count() != hidden_word.chars().count() {
 		panic!("Cannot compare strings with different lenght")
 	}
 
@@ -188,7 +188,7 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 		h
 	};
 
-	let mut res = vec![vec![CharResult::NotPresented; attempt_word.len()]];
+	let mut res = vec![vec![CharResult::NotPresented; attempt_word.chars().count()]];
 
 	let attempt_hash = make_hash(attempt_word);
 	let mut hidden_hash = make_hash(hidden_word);
