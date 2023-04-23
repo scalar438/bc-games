@@ -3,7 +3,7 @@ use colored::Colorize;
 use std::io::Write;
 
 pub enum Command {
-	StopGame, // Stop the current game, starn new
+	StopGame, // Stop the current game, start the new one
 	Quit,     // Stop the current game and quit
 }
 
