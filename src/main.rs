@@ -39,7 +39,7 @@ fn bot_game(
 		let cur_word;
 		match strategy.make_guess() {
 			Some(word) => {
-				println!("My attempt: {}", word);
+				println!("Bot's attempt: {}", word);
 				cur_word = word.to_owned();
 			}
 			None => {
@@ -47,7 +47,7 @@ fn bot_game(
 			}
 		}
 
-		let ans = input_getter.get_response_vector(Some(&cur_word), "Your attempt: ")?;
+		let ans = input_getter.get_response_vector(Some(&cur_word), "Type answer to attempt: ")?;
 
 		match ans {
 			Input::Value(v) => {
