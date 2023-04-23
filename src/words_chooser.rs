@@ -38,7 +38,7 @@ impl WordsChooser {
 		if self.state != ChoiseState::ReadyToMakeGuess {
 			panic!("Cannot make guess, invalid state")
 		}
-		if self.words_container.candidate_words.len() == 0 {
+		if self.words_container.candidate_words.is_empty() {
 			self.state = ChoiseState::NoMoreWords;
 			return None;
 		}
