@@ -54,35 +54,36 @@ impl WordsDb {
 	}
 
 	pub fn flush(&mut self) -> std::io::Result<()> {
-		let mut all_words: Vec<_> = self
+		let words_new: Vec<_> = self
 			.words
 			.iter()
 			.chain(self.new_words.iter())
 			.map(|x| x.clone())
 			.collect();
+		let mut all_words_db = words_new.clone();
 		if let Ok(f) = std::fs::File::open(&self.db_filename) {
 			for line in std::io::BufReader::new(f).lines() {
 				let line = line?;
 				let line = line.trim();
-				all_words.push(line.to_owned());
+				all_words_db.push(line.to_owned());
 			}
 		}
 
-		all_words.sort_by(|a, b| {
+		all_words_db.sort_by(|a, b| {
 			let r1 = a.len().cmp(&b.len());
 			if !r1.is_eq() {
 				return r1;
 			}
 			return a.cmp(&b);
 		});
-		all_words.dedup();
+		all_words_db.dedup();
 		{
 			let mut f = std::fs::File::create(&self.db_filename)?;
-			f.write(all_words.join("\n").as_bytes())?;
+			f.write(all_words_db.join("\n").as_bytes())?;
 		}
 
 		self.new_words = Vec::new();
-		self.words = all_words;
+		self.words = words_new;
 
 		return Ok(());
 	}
@@ -260,6 +261,53 @@ mod test {
 				let db = WordsDb::new(fname, 4).unwrap();
 
 				assert_eq!(db.words, ["abcd"]);
+			}
+		}
+		assert!(!file_delete_failed);
+	}
+
+	#[test]
+	fn test_flush_with_multiple_len() {
+		let fname = std::path::Path::new("./test_flush_with_multiple_len_db");
+		if fname.exists() {
+			panic!(
+				"The file/folder {:?} is exists before running tests!",
+				fname
+			);
+		}
+		let mut file_delete_failed = false;
+		{
+			let _file_deleter = FileDeleter {
+				path: fname.to_path_buf(),
+				res: &mut file_delete_failed,
+			};
+
+			{
+				let mut db = WordsDb::new(fname, 3).unwrap();
+
+				let words = ["foo", "bar", "baz"];
+				for word in words {
+					db.add_word(word);
+				}
+			}
+
+			{
+				let mut db = WordsDb::new(fname, 4).unwrap();
+
+				assert!(db.words.is_empty());
+				db.add_word("abcd");
+			}
+
+			{
+				let mut db = WordsDb::new(fname, 3).unwrap();
+
+				assert_eq!(db.words, ["bar", "baz", "foo"]);
+
+				db.add_word("qwe");
+				db.flush().unwrap();
+
+				assert!(db.new_words.is_empty());
+				assert_eq!(db.words, ["bar", "baz", "foo", "qwe"]);
 			}
 		}
 		assert!(!file_delete_failed);
