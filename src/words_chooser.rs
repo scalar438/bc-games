@@ -14,19 +14,21 @@ enum ChoiseState {
 	NoMoreWords,
 }
 
-pub struct WordsChooser {
+struct WordsContainer {
 	vocabulary: Vec<String>,
 	candidate_words: Vec<String>,
+}
+
+pub struct WordsChooser {
+	words_container: WordsContainer,
 	next_variants: HashMap<Vec<CharResult>, Vec<String>>,
 	state: ChoiseState,
 }
 
 impl WordsChooser {
 	pub fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> WordsChooser {
-		let tmp_vec: Vec<_> = all_words.map(|x| x.as_ref().to_owned()).collect();
 		WordsChooser {
-			vocabulary: tmp_vec.clone(),
-			candidate_words: tmp_vec,
+			words_container: WordsContainer::new(all_words),
 			next_variants: HashMap::new(),
 			state: ChoiseState::ReadyToMakeGuess,
 		}
@@ -36,20 +38,20 @@ impl WordsChooser {
 		if self.state != ChoiseState::ReadyToMakeGuess {
 			panic!("Cannot make guess, invalid state")
 		}
-		if self.candidate_words.len() == 0 {
+		if self.words_container.candidate_words.len() == 0 {
 			self.state = ChoiseState::NoMoreWords;
 			return None;
 		}
 		let mut all_variants = std::collections::HashMap::new();
 		let mut max_val = usize::MAX;
 		let mut res_attempt_word = "";
-		for attempt_word in self.vocabulary.iter() {
+		for attempt_word in self.words_container.construct_list_of_words() {
 			let mut all_variants_tmp = std::collections::HashMap::new();
 			let mut max_val_tmp = 0;
-			for hidden_word in self.candidate_words.iter() {
+			for hidden_word in self.words_container.candidate_words.iter() {
 				for res in calc_all_answers(attempt_word, hidden_word) {
 					let v = all_variants_tmp.entry(res).or_insert(Vec::new());
-					v.push(attempt_word);
+					v.push(hidden_word);
 					max_val_tmp = std::cmp::max(v.len(), max_val_tmp);
 				}
 			}
@@ -74,12 +76,53 @@ impl WordsChooser {
 			panic!("Unexpected state: {:?}", self.state);
 		}
 		if let Some(next) = self.next_variants.remove(respond) {
-			self.candidate_words = next;
+			self.words_container.candidate_words = next;
 		} else {
-			self.candidate_words.clear();
+			self.words_container.candidate_words.clear();
 		}
 		self.next_variants.clear();
 		self.state = ChoiseState::ReadyToMakeGuess;
+	}
+}
+
+impl WordsContainer {
+	fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> Self {
+		let vocabulary: Vec<_> = all_words.map(|x| x.as_ref().to_owned()).collect();
+		let candidate_words = vocabulary.clone();
+		Self {
+			vocabulary,
+			candidate_words,
+		}
+	}
+
+	fn construct_list_of_words(&self) -> Vec<&str> {
+		if self.candidate_words.is_empty() {
+			return Vec::new();
+		}
+		let candidate_strings: std::collections::HashSet<_> =
+			self.candidate_words.iter().map(String::as_str).collect();
+
+		let mut res: Vec<_> = self.vocabulary.iter().map(String::as_str).collect();
+
+		let mut x = 0;
+		let n = res.len();
+		let mut y = n;
+
+		while x < y {
+			while x != n && candidate_strings.contains(res[x]) {
+				x += 1;
+			}
+			while y != 0 && !candidate_strings.contains(res[y - 1]) {
+				y -= 1;
+			}
+			if x < y {
+				res.swap(x, y - 1);
+				x += 1;
+				y -= 1;
+			}
+		}
+
+		res
 	}
 }
 
@@ -329,4 +372,57 @@ fn test_calc_matching_7() {
 	let mut r = calc_all_answers(s1, s2);
 	r.sort();
 	assert_eq!(r, res_expected);
+}
+
+#[test]
+fn test_no_choise() {
+	let vocabulary: Vec<_> = ["abc", "abd", "bad"]
+		.iter()
+		.map(|x| x.to_string())
+		.collect();
+	let candidate_words = vocabulary.clone();
+	let mut w = WordsChooser {
+		words_container: WordsContainer {
+			vocabulary,
+			candidate_words,
+		},
+		next_variants: HashMap::new(),
+		state: ChoiseState::ReadyToMakeGuess,
+	};
+
+	assert!(w.make_guess().is_some());
+	assert_eq!(w.state, ChoiseState::WaitForRespond);
+	w.respond_to_guess(&[
+		CharResult::NotPresented,
+		CharResult::NotPresented,
+		CharResult::NotPresented,
+	]);
+
+	assert!(w.words_container.candidate_words.is_empty());
+	assert!(w.make_guess().is_none());
+}
+
+#[test]
+fn test_one_choise() {
+	let vocabulary: Vec<_> = ["abc", "abd"].iter().map(|x| x.to_string()).collect();
+	let candidate_words = vocabulary.clone();
+	let mut w = WordsChooser {
+		words_container: WordsContainer {
+			vocabulary,
+			candidate_words,
+		},
+		next_variants: HashMap::new(),
+		state: ChoiseState::ReadyToMakeGuess,
+	};
+
+	let attempt1 = w.make_guess().unwrap().to_owned();
+	assert!(attempt1 == "abc" || attempt1 == "abd");
+	w.respond_to_guess(&[
+		CharResult::FullMatch,
+		CharResult::FullMatch,
+		CharResult::NotPresented,
+	]);
+	assert_eq!(w.words_container.candidate_words.len(), 1);
+	let attempt2 = w.make_guess().unwrap();
+	assert_ne!(attempt1, attempt2);
 }
