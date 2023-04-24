@@ -83,7 +83,6 @@ fn one_game(
 	}
 
 	loop {
-		let cur_word;
 		match input_getter.get_word("Your attempt: ")? {
 			Input::Cmd(c) => match c {
 				Command::Quit => return Ok(false),
@@ -92,21 +91,6 @@ fn one_game(
 
 			Input::Value(s) => {
 				db.add_word(&s);
-				cur_word = s;
-			}
-		}
-
-		match input_getter.get_response_vector(Some(cur_word), "Response to your attempt: ")? {
-			Input::Cmd(c) => match c {
-				Command::Quit => return Ok(false),
-				Command::StopGame => return Ok(true),
-			},
-
-			Input::Value(v) => {
-				if v.iter().all(|x| x == &CharResult::FullMatch) {
-					println!("You won!");
-					return Ok(true);
-				}
 			}
 		}
 	}
