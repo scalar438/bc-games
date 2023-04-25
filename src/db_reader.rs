@@ -78,19 +78,13 @@ impl WordsDb {
 		if !self.need_flush {
 			return Ok(());
 		}
-		let mut words_new: Vec<_> = self
+		let words_new: Vec<_> = self
 			.words
 			.iter()
 			.chain(self.new_words.iter())
 			.map(|x| x.clone())
 			.collect();
-		words_new.sort();
-		words_new.dedup();
-		if words_new.len() == self.words.len() {
-			self.need_flush = false;
-			self.new_words.clear();
-			return Ok(());
-		}
+		
 		let mut all_words_db = words_new.clone();
 		if let Ok(f) = std::fs::File::open(&self.db_filename) {
 			for line in std::io::BufReader::new(f).lines() {
