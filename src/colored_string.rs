@@ -11,14 +11,16 @@ pub enum Color {
 }
 
 pub struct ColoredString {
-	string: String,
+	string: Vec<char>,
 	colors: Vec<Color>,
 }
 
 impl ColoredString {
 	pub fn new(string: String) -> ColoredString {
-		let colors = vec![Color::Default; string.len()];
-		Self { string, colors }
+		Self {
+			string: string.chars().collect(),
+			colors: vec![Color::Default; string.len()],
+		}
 	}
 
 	pub fn set_color(&mut self, idx: usize, color: Color) {
@@ -47,11 +49,12 @@ impl Display for ColoredString {
 			v
 		};
 		for (c, str_part) in color_ranges {
+			let s_tmp: String = str_part.iter().collect();
 			let str_part = match c {
-				Color::Default => str_part.normal(),
-				Color::Gray => str_part.white(),
-				Color::Green => str_part.green(),
-				Color::Yellow => str_part.yellow(),
+				Color::Default => s_tmp.normal(),
+				Color::Gray => s_tmp.white(),
+				Color::Green => s_tmp.green(),
+				Color::Yellow => s_tmp.yellow(),
 			};
 			write!(f, "{}", str_part)?
 		}
