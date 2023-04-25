@@ -22,8 +22,8 @@ impl WordsDb {
 		}
 	}
 
-	fn new_from_file(
-		f: &mut dyn std::io::Read,
+	fn new_from_file<R: std::io::Read>(
+		f: R,
 		path: &std::path::Path,
 		word_len: usize,
 	) -> std::io::Result<Self> {
@@ -78,12 +78,19 @@ impl WordsDb {
 		if !self.need_flush {
 			return Ok(());
 		}
-		let words_new: Vec<_> = self
+		let mut words_new: Vec<_> = self
 			.words
 			.iter()
 			.chain(self.new_words.iter())
 			.map(|x| x.clone())
 			.collect();
+		words_new.sort();
+		words_new.dedup();
+		if words_new.len() == self.words.len() {
+			self.need_flush = false;
+			self.new_words.clear();
+			return Ok(());
+		}
 		let mut all_words_db = words_new.clone();
 		if let Ok(f) = std::fs::File::open(&self.db_filename) {
 			for line in std::io::BufReader::new(f).lines() {
@@ -128,10 +135,7 @@ impl Drop for WordsDb {
 
 #[cfg(test)]
 mod test {
-	use std::io::Seek;
-
 	use super::*;
-	use tempfile;
 
 	struct FileDeleter<'a> {
 		path: std::path::PathBuf,
@@ -179,14 +183,12 @@ mod test {
 
 	#[test]
 	fn test_read() {
-		let mut f = tempfile::spooled_tempfile(100000);
-
+		let mut v: Vec<u8> = Vec::new();
 		let words = ["bar", "baz", "foo"];
-		f.write(words.join("\n").as_bytes()).unwrap();
-		f.seek(std::io::SeekFrom::Start(0)).unwrap();
+		v.write(words.join("\n").as_bytes()).unwrap();
 
 		{
-			let db = WordsDb::new_from_file(&mut f, std::path::Path::new(""), 3);
+			let db = WordsDb::new_from_file(&v[..], std::path::Path::new(""), 3);
 
 			let db = db.unwrap();
 			assert_eq!(db.words, words);

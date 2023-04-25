@@ -7,6 +7,3 @@ edition = "2021"
 [dependencies]
 colored = "2"
 dialoguer = "0.10"
-
-[dev-dependencies]
-tempfile = "3"
