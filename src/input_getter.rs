@@ -1,5 +1,5 @@
 use super::words_chooser::CharResult;
-use colored::Colorize;
+use super::colored_string::{ColoredString, Color};
 use std::io::Write;
 
 pub enum Command {
@@ -18,36 +18,8 @@ pub struct InputGetter {
 	word_len: usize,
 }
 
-fn print_colored(s: &str, cr: CharResult) {
-	let s = match cr {
-		CharResult::NotPresented => s.white(),
-		CharResult::PartialMatch => s.yellow(),
-		CharResult::FullMatch => s.green(),
-	};
-	print!("{0}", s);
-}
-
-fn is_accepted(colored_str: &Vec<(char, &CharResult)>) -> std::io::Result<bool> {
-	let mut prev = None;
-	let mut s = String::new();
-	print!("Answer is ");
-
-	for (c, cr) in colored_str {
-		if prev != Some(**cr) {
-			if let Some(prev) = prev {
-				print_colored(&s, prev);
-			}
-			s.clear();
-
-			prev = Some(**cr);
-		}
-		s.push(*c);
-	}
-	if !s.is_empty() {
-		print_colored(&s, prev.unwrap());
-	}
-	print!("?");
-	std::io::stdout().flush()?;
+fn is_accepted(colored_str: &ColoredString) -> std::io::Result<bool> {
+	println!("Your answer is {0}?", colored_str);
 	dialoguer::Confirm::new().interact()
 }
 
@@ -119,8 +91,17 @@ impl InputGetter {
 						.collect();
 
 					if let Some(attempt_word) = &attempt_word {
-						let tmp_vec = attempt_word.as_ref().chars().zip(vec_res.iter()).collect();
-						if is_accepted(&tmp_vec)? {
+						let mut colored_string = ColoredString::new(attempt_word.as_ref().to_owned());
+						for (i, c) in vec_res.iter().enumerate()
+						{
+							match c
+							{
+								CharResult::FullMatch => colored_string.set_color(i, Color::Green),
+								CharResult::PartialMatch => colored_string.set_color(i, Color::Yellow),
+								CharResult::NotPresented => colored_string.set_color(i, Color::Gray),
+							}
+						}
+						if is_accepted(&colored_string)? {
 							return Ok(Input::Value(vec_res));
 						} else {
 							continue;

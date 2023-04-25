@@ -1,6 +1,7 @@
 use std::env;
 mod db_reader;
 mod input_getter;
+mod colored_string;
 mod words_chooser;
 use crate::words_chooser::CharResult;
 use input_getter::{Command, Input, InputGetter};
