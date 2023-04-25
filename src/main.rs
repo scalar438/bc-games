@@ -108,14 +108,11 @@ fn main() {
 	}
 	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt"), word_len).unwrap();
 	loop {
+		db.sync_new_words();
 		let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
 
 		if !one_game(&mut db, &mut strategy, word_len).unwrap() {
 			break;
-		}
-		if let Err(e) = db.flush() {
-			println!("Unextected error: {0}", e);
-			return;
 		}
 	}
 }

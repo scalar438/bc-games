@@ -5,6 +5,7 @@ pub struct WordsDb {
 	db_filename: std::path::PathBuf,
 	new_words: Vec<String>,
 	word_current_len: usize,
+	need_flush: bool,
 }
 
 impl WordsDb {
@@ -16,6 +17,7 @@ impl WordsDb {
 				new_words: Vec::new(),
 				db_filename: path.to_path_buf(),
 				word_current_len: word_len,
+				need_flush: false,
 			}),
 		}
 	}
@@ -38,7 +40,25 @@ impl WordsDb {
 			db_filename: path.to_path_buf(),
 			new_words: Vec::new(),
 			word_current_len: word_len,
+			need_flush: false,
 		})
+	}
+
+	pub fn sync_new_words(&mut self) {
+		if self.new_words.is_empty() {
+			return;
+		}
+		let mut new_words: Vec<_> = self
+			.words
+			.iter()
+			.chain(self.new_words.iter())
+			.map(|x| x.clone())
+			.collect();
+		new_words.sort();
+		new_words.dedup();
+
+		self.new_words.clear();
+		self.words = new_words;
 	}
 
 	pub fn add_word(&mut self, word: &str) {
@@ -47,6 +67,7 @@ impl WordsDb {
 			panic!("Invalid word len");
 		}
 		self.new_words.push(word.to_lowercase());
+		self.need_flush = true;
 	}
 
 	pub fn words_iter(&self) -> impl Iterator<Item = &String> + '_ {
@@ -54,6 +75,9 @@ impl WordsDb {
 	}
 
 	pub fn flush(&mut self) -> std::io::Result<()> {
+		if !self.need_flush {
+			return Ok(());
+		}
 		let words_new: Vec<_> = self
 			.words
 			.iter()
@@ -84,6 +108,7 @@ impl WordsDb {
 
 		self.new_words.clear();
 		self.words = words_new;
+		self.need_flush = false;
 
 		return Ok(());
 	}
@@ -311,5 +336,21 @@ mod test {
 			}
 		}
 		assert!(!file_delete_failed);
+	}
+
+	#[test]
+	fn test_sync_new_words() {
+		let mut db = WordsDb {
+			words: ["abc", "bcd"].into_iter().map(|x| x.to_owned()).collect(),
+			new_words: Vec::new(),
+			db_filename: std::path::PathBuf::new(),
+			word_current_len: 3,
+			need_flush: false,
+		};
+		db.add_word("efc");
+		db.add_word("abc");
+		db.sync_new_words();
+		assert!(db.new_words.is_empty());
+		assert_eq!(db.words, ["abc", "bcd", "efc"]);
 	}
 }
