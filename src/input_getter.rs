@@ -1,5 +1,5 @@
+use super::colored_string::{Color, ColoredString};
 use super::words_chooser::CharResult;
-use super::colored_string::{ColoredString, Color};
 use std::io::Write;
 
 pub enum Command {
@@ -91,14 +91,17 @@ impl InputGetter {
 						.collect();
 
 					if let Some(attempt_word) = &attempt_word {
-						let mut colored_string = ColoredString::new(attempt_word.as_ref().to_owned());
-						for (i, c) in vec_res.iter().enumerate()
-						{
-							match c
-							{
+						let mut colored_string =
+							ColoredString::new(attempt_word.as_ref().to_owned());
+						for (i, c) in vec_res.iter().enumerate() {
+							match c {
 								CharResult::FullMatch => colored_string.set_color(i, Color::Green),
-								CharResult::PartialMatch => colored_string.set_color(i, Color::Yellow),
-								CharResult::NotPresented => colored_string.set_color(i, Color::Gray),
+								CharResult::PartialMatch => {
+									colored_string.set_color(i, Color::Yellow)
+								}
+								CharResult::NotPresented => {
+									colored_string.set_color(i, Color::Gray)
+								}
 							}
 						}
 						if is_accepted(&colored_string)? {

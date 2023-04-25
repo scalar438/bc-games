@@ -82,7 +82,7 @@ impl WordsDb {
 			f.write(all_words_db.join("\n").as_bytes())?;
 		}
 
-		self.new_words = Vec::new();
+		self.new_words.clear();
 		self.words = words_new;
 
 		return Ok(());
