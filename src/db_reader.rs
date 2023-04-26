@@ -84,7 +84,7 @@ impl WordsDb {
 			.chain(self.new_words.iter())
 			.map(|x| x.clone())
 			.collect();
-		
+
 		let mut all_words_db = words_new.clone();
 		if let Ok(f) = std::fs::File::open(&self.db_filename) {
 			for line in std::io::BufReader::new(f).lines() {
@@ -117,10 +117,6 @@ impl WordsDb {
 
 impl Drop for WordsDb {
 	fn drop(&mut self) {
-		if self.new_words.is_empty() {
-			return;
-		}
-
 		if self.flush().is_err() {
 			eprintln!("Unexpected error during saving the word database file");
 		}
@@ -170,6 +166,7 @@ mod test {
 				let db = WordsDb::new(fname, 5);
 
 				let db = db.unwrap();
+				assert!(!db.need_flush);
 				assert!(db.words.is_empty());
 			}
 		}
@@ -316,7 +313,9 @@ mod test {
 				let mut db = WordsDb::new(fname, 4).unwrap();
 
 				assert!(db.words.is_empty());
+				assert!(!db.need_flush);
 				db.add_word("abcd");
+				assert!(db.need_flush);
 			}
 
 			{
@@ -325,10 +324,12 @@ mod test {
 				assert_eq!(db.words, ["bar", "baz", "foo"]);
 
 				db.add_word("qwe");
+				assert!(db.need_flush);
 				db.flush().unwrap();
 
 				assert!(db.new_words.is_empty());
 				assert_eq!(db.words, ["bar", "baz", "foo", "qwe"]);
+				assert!(!db.need_flush);
 			}
 		}
 		assert!(!file_delete_failed);
@@ -348,5 +349,6 @@ mod test {
 		db.sync_new_words();
 		assert!(db.new_words.is_empty());
 		assert_eq!(db.words, ["abc", "bcd", "efc"]);
+		assert!(db.need_flush);
 	}
 }
