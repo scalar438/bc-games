@@ -170,6 +170,24 @@ fn test_increase_3() {
 	assert!(!try_increase(&mut arr, 4));
 }
 
+fn convert_res(arg: &[CharResult]) -> u32 {
+	let mut res = 0;
+	let mut delta = 1;
+	for c in arg {
+		match c {
+			CharResult::FullMatch => res += delta + delta,
+			CharResult::PartialMatch => res += delta,
+			CharResult::NotPresented => {} // Do nothing
+		}
+		delta *= 3;
+	}
+	res
+}
+
+fn calc_all_answers_new(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
+	res.clear();
+}
+
 // Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
 // The main reason why we need to return vector instead of only one result is a letter repetitions
 // For example, if the hidden word is "abba", and the attempt word is "baaa",
@@ -266,112 +284,138 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult
 	res
 }
 
-#[test]
-fn test_calc_matching_1() {
-	let s1 = "abcd";
-	let s2 = "xyzw";
-	assert_eq!(calc_all_answers(s1, s2), [[CharResult::NotPresented; 4]])
-}
+#[cfg(test)]
+mod test {
 
-#[test]
-fn test_calc_matching_2() {
-	let s1 = "abcd";
-	let s2 = "abcd";
-	assert_eq!(calc_all_answers(s1, s2), [[CharResult::FullMatch; 4]])
-}
+	use super::*;
 
-#[test]
-fn test_calc_matching_3() {
-	let s1 = "abcd";
-	let s2 = "dcba";
-	assert_eq!(calc_all_answers(s1, s2), [[CharResult::PartialMatch; 4]])
-}
+	fn calc_all_answers_test(attempt_word: &str, hidden_word: &str) -> Vec<u32> {
+		let mut res = Vec::new();
+		calc_all_answers_new(attempt_word, hidden_word, &mut res);
+		res
+	}
 
-#[test]
-fn test_calc_matching_4() {
-	let s1 = "abcd";
-	let s2 = "acba";
-	assert_eq!(
-		calc_all_answers(s1, s2),
-		[[
-			CharResult::FullMatch,
-			CharResult::PartialMatch,
-			CharResult::PartialMatch,
-			CharResult::NotPresented
-		]]
-	)
-}
+	#[test]
+	fn test_calc_matching_1() {
+		let s1 = "abcd";
+		let s2 = "xyzw";
+		assert_eq!(
+			calc_all_answers_test(s1, s2),
+			[convert_res(&[CharResult::NotPresented; 4])]
+		)
+	}
 
-#[test]
-fn test_calc_matching_5() {
-	let s1 = "dbca";
-	let s2 = "acba";
-	assert_eq!(
-		calc_all_answers(s1, s2),
-		[[
-			CharResult::NotPresented,
-			CharResult::PartialMatch,
-			CharResult::PartialMatch,
-			CharResult::FullMatch
-		]]
-	)
-}
+	#[test]
+	fn test_calc_matching_2() {
+		let s1 = "abcd";
+		let s2 = "abcd";
+		assert_eq!(
+			calc_all_answers_test(s1, s2),
+			[convert_res(&[CharResult::FullMatch; 4])]
+		)
+	}
 
-#[test]
-fn test_calc_matching_6() {
-	let s1 = "abba";
-	let s2 = "babb";
-	let mut r = calc_all_answers(s1, s2);
-	assert_eq!(r.len(), 2);
-	r.sort();
-	let r = r;
+	#[test]
+	fn test_calc_matching_3() {
+		let s1 = "abcd";
+		let s2 = "dcba";
+		assert_eq!(
+			calc_all_answers_test(s1, s2),
+			[convert_res(&[CharResult::PartialMatch; 4])]
+		)
+	}
 
-	let f = |&x| match x {
-		0 => CharResult::NotPresented,
-		1 => CharResult::PartialMatch,
-		2 => CharResult::FullMatch,
-		_ => panic!("Invalid argument: {}", x),
-	};
+	#[test]
+	fn test_calc_matching_4() {
+		let s1 = "abcd";
+		let s2 = "acba";
+		assert_eq!(
+			calc_all_answers_test(s1, s2),
+			[convert_res(&[
+				CharResult::FullMatch,
+				CharResult::PartialMatch,
+				CharResult::PartialMatch,
+				CharResult::NotPresented
+			])]
+		)
+	}
 
-	let res_expected = vec![
-		[0, 1, 2, 1].iter().map(f).collect::<Vec<_>>(),
-		[1, 1, 2, 0].iter().map(f).collect::<Vec<_>>(),
-	];
-	assert_eq!(r, res_expected);
-}
+	#[test]
+	fn test_calc_matching_5() {
+		let s1 = "dbca";
+		let s2 = "acba";
+		assert_eq!(
+			calc_all_answers_test(s1, s2),
+			[convert_res(&[
+				CharResult::NotPresented,
+				CharResult::PartialMatch,
+				CharResult::PartialMatch,
+				CharResult::FullMatch
+			])]
+		)
+	}
 
-#[test]
-fn test_calc_matching_7() {
-	// Two of "a"-s and one of "b" is PartialMatch
-	let s1 = "ddaaabb";
-	let s2 = "aabcccc";
+	#[test]
+	fn test_calc_matching_6() {
+		let s1 = "abba";
+		let s2 = "babb";
+		let mut r = calc_all_answers_test(s1, s2);
+		assert_eq!(r.len(), 2);
+		r.sort();
+		let r = r;
 
-	let res_expected = vec![
-		[0, 0, 1, 1, 0, 1, 0],
-		[0, 0, 1, 0, 1, 1, 0],
-		[0, 0, 0, 1, 1, 1, 0],
-		[0, 0, 1, 1, 0, 0, 1],
-		[0, 0, 1, 0, 1, 0, 1],
-		[0, 0, 0, 1, 1, 0, 1],
-	];
-	let mut res_expected: Vec<_> = res_expected
-		.into_iter()
-		.map(|arr| {
-			arr.iter()
-				.map(|x| match x {
-					0 => CharResult::NotPresented,
-					1 => CharResult::PartialMatch,
-					2 => CharResult::FullMatch,
-					_ => panic!("Invalid argument: {}", x),
-				})
-				.collect::<Vec<_>>()
-		})
-		.collect();
-	res_expected.sort();
+		let f = |&x| match x {
+			0 => CharResult::NotPresented,
+			1 => CharResult::PartialMatch,
+			2 => CharResult::FullMatch,
+			_ => panic!("Invalid argument: {}", x),
+		};
 
-	let mut r = calc_all_answers(s1, s2);
-	r.sort();
-	assert_eq!(r, res_expected);
+		let res_expected = vec![
+			[0, 1, 2, 1].iter().map(f).collect::<Vec<_>>(),
+			[1, 1, 2, 0].iter().map(f).collect::<Vec<_>>(),
+		];
+		let res_expected: Vec<_> = res_expected
+			.iter()
+			.map(|x| convert_res(x.as_slice()))
+			.collect();
+		assert_eq!(r, res_expected);
+	}
+
+	#[test]
+	fn test_calc_matching_7() {
+		// Two of "a"-s and one of "b" is PartialMatch
+		let s1 = "ddaaabb";
+		let s2 = "aabcccc";
+
+		let res_expected = vec![
+			[0, 0, 1, 1, 0, 1, 0],
+			[0, 0, 1, 0, 1, 1, 0],
+			[0, 0, 0, 1, 1, 1, 0],
+			[0, 0, 1, 1, 0, 0, 1],
+			[0, 0, 1, 0, 1, 0, 1],
+			[0, 0, 0, 1, 1, 0, 1],
+		];
+		let mut res_expected: Vec<_> = res_expected
+			.into_iter()
+			.map(|arr| {
+				arr.iter()
+					.map(|x| match x {
+						0 => CharResult::NotPresented,
+						1 => CharResult::PartialMatch,
+						2 => CharResult::FullMatch,
+						_ => panic!("Invalid argument: {}", x),
+					})
+					.collect::<Vec<_>>()
+			})
+			.map(|x| convert_res(&x))
+			.collect();
+		res_expected.sort();
+
+		let mut r = calc_all_answers_test(s1, s2);
+		r.sort();
+		assert_eq!(r, res_expected);
+	}
 }
 
 #[test]
