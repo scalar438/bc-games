@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, vec};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum CharResult {
@@ -23,6 +23,7 @@ pub struct WordsChooser {
 	words_container: WordsContainer,
 	next_variants: HashMap<Vec<CharResult>, Vec<String>>,
 	state: ChoiseState,
+	word_len: u32
 }
 
 impl WordsChooser {
@@ -31,6 +32,7 @@ impl WordsChooser {
 			words_container: WordsContainer::new(all_words),
 			next_variants: HashMap::new(),
 			state: ChoiseState::ReadyToMakeGuess,
+			word_len: 5 // TODO: make a right value
 		}
 	}
 
@@ -42,30 +44,35 @@ impl WordsChooser {
 			self.state = ChoiseState::NoMoreWords;
 			return None;
 		}
-		let mut all_variants = std::collections::HashMap::new();
-		let mut max_val = usize::MAX;
+		let mut max_val = u32::MAX;
 		let mut res_attempt_word = "";
+		let total_answers_count = 
+		{
+			let mut d = 1;
+			for _ in 0..self.word_len {d *= 3;}
+			d
+		};
+		let mut vec_variants = Vec::new();
+		vec_variants.resize(total_answers_count, 0);
+
+		let mut answers_vec = Vec::new();
+
 		for attempt_word in self.words_container.construct_list_of_words() {
-			let mut all_variants_tmp = std::collections::HashMap::new();
-			let mut max_val_tmp = 0;
+			for v in vec_variants.iter_mut() {*v = 0}
 			for hidden_word in self.words_container.candidate_words.iter() {
-				for res in calc_all_answers(attempt_word, hidden_word) {
-					let v = all_variants_tmp.entry(res).or_insert(Vec::new());
-					v.push(hidden_word);
-					max_val_tmp = std::cmp::max(v.len(), max_val_tmp);
+				calc_all_answers(attempt_word, hidden_word, &mut answers_vec);
+				for res in answers_vec.iter() {
+					vec_variants[*res as usize] += 1;
 				}
 			}
-			if max_val_tmp < max_val {
-				max_val = max_val_tmp;
-				all_variants = all_variants_tmp;
-				res_attempt_word = &(*attempt_word);
-			}
+			let tmp_val = answers_vec.iter().max();
+			if let Some(tmp_val) = tmp_val{
+			if tmp_val < &max_val
+			{
+				max_val = *tmp_val;
+				res_attempt_word = attempt_word;
+			}}
 		}
-
-		self.next_variants = all_variants
-			.drain()
-			.map(|(k, v)| (k, v.into_iter().map(|x| x.clone()).collect()))
-			.collect();
 
 		self.state = ChoiseState::WaitForRespond;
 		Some(res_attempt_word)
@@ -184,7 +191,12 @@ fn convert_res(arg: &[CharResult]) -> u32 {
 	res
 }
 
-fn calc_all_answers_new(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
+// Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
+// The main reason why we need to return vector instead of only one result is a letter repetitions
+// For example, if the hidden word is "abba", and the attempt word is "baaa",
+// the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
+// We match either second or third letter to the first "a" of hidden word
+fn calc_all_answers(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
 	let len = attempt_word.chars().count();
 	if len != hidden_word.chars().count() {
 		panic!("Cannot compare strings with different lenght")
@@ -285,102 +297,6 @@ fn calc_all_answers_new(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32
 	}
 }
 
-// Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
-// The main reason why we need to return vector instead of only one result is a letter repetitions
-// For example, if the hidden word is "abba", and the attempt word is "baaa",
-// the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
-// We match either second or third letter to the first "a" of hidden word
-fn calc_all_answers(attempt_word: &str, hidden_word: &str) -> Vec<Vec<CharResult>> {
-	if attempt_word.chars().count() != hidden_word.chars().count() {
-		panic!("Cannot compare strings with different lenght")
-	}
-
-	let make_hash = |x: &str| {
-		let mut h = HashMap::new();
-		for (i, c) in x.chars().enumerate() {
-			h.entry(c).or_insert(Vec::new()).push(i);
-		}
-		h
-	};
-
-	let mut res = vec![vec![CharResult::NotPresented; attempt_word.chars().count()]];
-
-	let attempt_hash = make_hash(attempt_word);
-	let mut hidden_hash = make_hash(hidden_word);
-
-	for (attempt_char, mut attempt_pos) in attempt_hash {
-		if let Some(mut hidden_pos) = hidden_hash.remove(&attempt_char) {
-			let old_attempt_pos_len = attempt_pos.len();
-			let old_hidden_pos_len = std::cmp::min(hidden_pos.len(), old_attempt_pos_len);
-
-			// We should remove positions that are also presented in the hidden_pos
-			let mut new_attempt_pos = Vec::new();
-
-			// Both vectors are sorted, so we can compare elements one-by-one by moving pointers and ignoring equal items
-			// "Pointer" here is just the last element in the vector
-			loop {
-				match (attempt_pos.last(), hidden_pos.last()) {
-					(Some(a), Some(h)) => {
-						let va = *a;
-						let vh = *h;
-						if va <= vh {
-							hidden_pos.pop();
-						} else {
-							new_attempt_pos.push(va);
-						}
-						if va >= vh {
-							attempt_pos.pop();
-						}
-						if va == vh {
-							for vec_r in res.iter_mut() {
-								vec_r[va] = CharResult::FullMatch;
-							}
-						}
-					}
-					(_, _) => {
-						break;
-					}
-				}
-			}
-
-			new_attempt_pos.append(&mut attempt_pos);
-			attempt_pos = new_attempt_pos;
-
-			let num_of_matched = old_attempt_pos_len - attempt_pos.len();
-			let num_of_hidden = old_hidden_pos_len - num_of_matched;
-
-			if attempt_pos.len() <= num_of_hidden {
-				for one_res in res.iter_mut() {
-					for p in attempt_pos.iter() {
-						if one_res[*p] != CharResult::FullMatch {
-							one_res[*p] = CharResult::PartialMatch;
-						}
-					}
-				}
-			} else {
-				let mut tmp_res = Vec::new();
-				let mut yellow_positions: Vec<_> = (0..num_of_hidden).collect();
-
-				loop {
-					for prev in res.iter() {
-						let mut np = prev.clone();
-						for v in yellow_positions.iter() {
-							np[attempt_pos[*v]] = CharResult::PartialMatch;
-						}
-						tmp_res.push(np);
-					}
-					if !try_increase(&mut yellow_positions, attempt_pos.len() - 1) {
-						break;
-					}
-				}
-				res = tmp_res;
-			}
-		}
-	}
-
-	res
-}
-
 #[cfg(test)]
 mod test {
 
@@ -388,7 +304,7 @@ mod test {
 
 	fn calc_all_answers_test(attempt_word: &str, hidden_word: &str) -> Vec<u32> {
 		let mut res = Vec::new();
-		calc_all_answers_new(attempt_word, hidden_word, &mut res);
+		calc_all_answers(attempt_word, hidden_word, &mut res);
 		res
 	}
 
@@ -530,6 +446,7 @@ fn test_no_choise() {
 		},
 		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
+		word_len: 3
 	};
 
 	assert!(w.make_guess().is_some());
@@ -555,6 +472,7 @@ fn test_one_choise() {
 		},
 		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
+		word_len: 3
 	};
 
 	let attempt1 = w.make_guess().unwrap().to_owned();
@@ -596,6 +514,7 @@ fn test_smartest_choise() {
 		},
 		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
+		word_len: 3
 	};
 
 	let attempt1 = w.make_guess().unwrap();
