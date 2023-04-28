@@ -185,7 +185,104 @@ fn convert_res(arg: &[CharResult]) -> u32 {
 }
 
 fn calc_all_answers_new(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
+	let len = attempt_word.chars().count();
+	if len != hidden_word.chars().count() {
+		panic!("Cannot compare strings with different lenght")
+	}
+
+	let make_hash = |x: &str| {
+		let mut h = HashMap::new();
+		for (i, c) in x.chars().enumerate() {
+			h.entry(c).or_insert(Vec::new()).push(i);
+		}
+		h
+	};
+	let pow3 = {
+		let mut p = Vec::new();
+		let mut d = 1;
+		for _ in 0..len {
+			p.push(d);
+			d *= 3;
+		}
+		p
+	};
+
 	res.clear();
+	res.push(0);
+
+	let attempt_hash = make_hash(attempt_word);
+	let mut hidden_hash = make_hash(hidden_word);
+
+	for (attempt_char, mut attempt_pos) in attempt_hash {
+		if let Some(mut hidden_pos) = hidden_hash.remove(&attempt_char) {
+			let old_attempt_pos_len = attempt_pos.len();
+			let old_hidden_pos_len = std::cmp::min(hidden_pos.len(), old_attempt_pos_len);
+
+			// We should remove positions that are also presented in the hidden_pos
+			let mut new_attempt_pos = Vec::new();
+
+			// Both vectors are sorted, so we can compare elements one-by-one by moving pointers and ignoring equal items
+			// "Pointer" here is just the last element in the vector
+			loop {
+				match (attempt_pos.last(), hidden_pos.last()) {
+					(Some(a), Some(h)) => {
+						let va = *a;
+						let vh = *h;
+						if va <= vh {
+							hidden_pos.pop();
+						} else {
+							new_attempt_pos.push(va);
+						}
+						if va >= vh {
+							attempt_pos.pop();
+						}
+						if va == vh {
+							// If we are here, characters at position va are equal
+							for r_v in res.iter_mut() {
+								*r_v += pow3[va] * 2;
+							}
+						}
+					}
+					(_, _) => {
+						break;
+					}
+				}
+			}
+
+			new_attempt_pos.append(&mut attempt_pos);
+			attempt_pos = new_attempt_pos;
+
+			let num_of_matched = old_attempt_pos_len - attempt_pos.len();
+			let num_of_hidden = old_hidden_pos_len - num_of_matched;
+
+			if attempt_pos.len() <= num_of_hidden {
+				for one_res in res.iter_mut() {
+					for p in attempt_pos.iter() {
+						if (*one_res / pow3[*p]) % 3 != 2 {
+							*one_res += pow3[*p];
+						}
+					}
+				}
+			} else {
+				let mut tmp_res = Vec::new();
+				let mut yellow_positions: Vec<_> = (0..num_of_hidden).collect();
+
+				loop {
+					for prev in res.iter() {
+						let mut np = *prev;
+						for v in yellow_positions.iter() {
+							np += pow3[attempt_pos[*v]];
+						}
+						tmp_res.push(np);
+					}
+					if !try_increase(&mut yellow_positions, attempt_pos.len() - 1) {
+						break;
+					}
+				}
+				*res = tmp_res;
+			}
+		}
+	}
 }
 
 // Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
@@ -375,10 +472,11 @@ mod test {
 			[0, 1, 2, 1].iter().map(f).collect::<Vec<_>>(),
 			[1, 1, 2, 0].iter().map(f).collect::<Vec<_>>(),
 		];
-		let res_expected: Vec<_> = res_expected
+		let mut res_expected: Vec<_> = res_expected
 			.iter()
 			.map(|x| convert_res(x.as_slice()))
 			.collect();
+		res_expected.sort();
 		assert_eq!(r, res_expected);
 	}
 
