@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash, vec};
+use std::{collections::HashMap, hash::Hash};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum CharResult {
@@ -21,18 +21,18 @@ struct WordsContainer {
 
 pub struct WordsChooser {
 	words_container: WordsContainer,
-	next_variants: HashMap<Vec<CharResult>, Vec<String>>,
 	state: ChoiseState,
-	word_len: u32
+	word_len: u32,
+	last_word: Option<String>,
 }
 
 impl WordsChooser {
 	pub fn new<T: AsRef<str>>(all_words: &mut dyn Iterator<Item = &T>) -> WordsChooser {
 		WordsChooser {
 			words_container: WordsContainer::new(all_words),
-			next_variants: HashMap::new(),
 			state: ChoiseState::ReadyToMakeGuess,
-			word_len: 5 // TODO: make a right value
+			word_len: 5, // TODO: make a right value
+			last_word: None,
 		}
 	}
 
@@ -46,10 +46,11 @@ impl WordsChooser {
 		}
 		let mut max_val = u32::MAX;
 		let mut res_attempt_word = "";
-		let total_answers_count = 
-		{
+		let total_answers_count = {
 			let mut d = 1;
-			for _ in 0..self.word_len {d *= 3;}
+			for _ in 0..self.word_len {
+				d *= 3;
+			}
 			d
 		};
 		let mut vec_variants = Vec::new();
@@ -58,23 +59,26 @@ impl WordsChooser {
 		let mut answers_vec = Vec::new();
 
 		for attempt_word in self.words_container.construct_list_of_words() {
-			for v in vec_variants.iter_mut() {*v = 0}
+			for v in vec_variants.iter_mut() {
+				*v = 0
+			}
 			for hidden_word in self.words_container.candidate_words.iter() {
 				calc_all_answers(attempt_word, hidden_word, &mut answers_vec);
 				for res in answers_vec.iter() {
 					vec_variants[*res as usize] += 1;
 				}
 			}
-			let tmp_val = answers_vec.iter().max();
-			if let Some(tmp_val) = tmp_val{
-			if tmp_val < &max_val
-			{
-				max_val = *tmp_val;
-				res_attempt_word = attempt_word;
-			}}
+			let tmp_val = vec_variants.iter().max();
+			if let Some(tmp_val) = tmp_val {
+				if tmp_val < &max_val {
+					max_val = *tmp_val;
+					res_attempt_word = attempt_word;
+				}
+			}
 		}
 
 		self.state = ChoiseState::WaitForRespond;
+		self.last_word = Some(res_attempt_word.to_owned());
 		Some(res_attempt_word)
 	}
 
@@ -82,12 +86,14 @@ impl WordsChooser {
 		if self.state != ChoiseState::WaitForRespond {
 			panic!("Unexpected state: {:?}", self.state);
 		}
-		if let Some(next) = self.next_variants.remove(respond) {
-			self.words_container.candidate_words = next;
-		} else {
-			self.words_container.candidate_words.clear();
-		}
-		self.next_variants.clear();
+		let respond = convert_res(respond);
+		let mut tmp = Vec::new();
+		let last_word = self.last_word.as_ref().unwrap();
+		self.words_container.candidate_words.retain(|x| {
+			calc_all_answers(&last_word, x, &mut tmp);
+			tmp.contains(&respond)
+		});
+
 		self.state = ChoiseState::ReadyToMakeGuess;
 	}
 }
@@ -136,6 +142,7 @@ impl WordsContainer {
 // Try to increase lexicographically the given array with following conditions:
 // 1) Elements in the array are distinct and sorted
 // 2) Elements in the array are less or equal max_val
+// Precondition: array must be sorted before
 // Return true if we have increased the array, otherwise return false
 fn try_increase(arr: &mut [usize], mut max_val: usize) -> bool {
 	let mut i = arr.len();
@@ -270,9 +277,7 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
 			if attempt_pos.len() <= num_of_hidden {
 				for one_res in res.iter_mut() {
 					for p in attempt_pos.iter() {
-						if (*one_res / pow3[*p]) % 3 != 2 {
-							*one_res += pow3[*p];
-						}
+						*one_res += pow3[*p];
 					}
 				}
 			} else {
@@ -444,9 +449,9 @@ fn test_no_choise() {
 			vocabulary,
 			candidate_words,
 		},
-		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3
+		word_len: 3,
+		last_word: None,
 	};
 
 	assert!(w.make_guess().is_some());
@@ -470,12 +475,13 @@ fn test_one_choise() {
 			vocabulary,
 			candidate_words,
 		},
-		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3
+		word_len: 3,
+		last_word: None,
 	};
 
 	let attempt1 = w.make_guess().unwrap().to_owned();
+	assert_eq!(w.last_word.as_ref().unwrap(), &attempt1);
 	assert!(attempt1 == "abc" || attempt1 == "abd");
 	w.respond_to_guess(&[
 		CharResult::FullMatch,
@@ -487,7 +493,7 @@ fn test_one_choise() {
 	assert_ne!(attempt1, attempt2);
 }
 
-// In this test is most sensible choise as the first attempt is "abc" or "cbg"
+// In this test is the most reasonable choise as the first attempt is "abc" or "cbg"
 // If we chose "bde", one of the possible answers is "100" is matched with two words - "fcb" and "abc",
 // so we have to guess between them if we get this answer
 // By the same reason, the word "fcb" and "011" as answer tells us the possible word either "abc" or "cbg"
@@ -496,7 +502,7 @@ fn test_one_choise() {
 //    "011" - "fcb",
 //    "021" - "cbg",
 // Because we have no possible answers with more than one words, it is better than previous ones
-// The "cbg" is a good choise too:
+// The "cbg" is a good choise too, because:
 //    "010" - "bde"
 //    "110" - "fcb"
 //    "120" - "abc"
@@ -512,13 +518,14 @@ fn test_smartest_choise() {
 			vocabulary,
 			candidate_words,
 		},
-		next_variants: HashMap::new(),
 		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3
+		word_len: 3,
+		last_word: None,
 	};
 
 	let attempt1 = w.make_guess().unwrap();
 	// Check for the best options
+	dbg!(&attempt1);
 	assert!(attempt1 == "abc" || attempt1 == "cbg");
 
 	// Let's assume we picked "bde". In this case the answer is "010" regardles of an attempt
