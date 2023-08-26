@@ -111,6 +111,7 @@ impl InputGetter {
 						}
 					}
 				}
+
 				Input::Cmd(cmd) => {
 					return Ok(Input::Cmd(cmd));
 				}

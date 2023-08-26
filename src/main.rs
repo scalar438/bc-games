@@ -32,6 +32,20 @@ fn get_word_len() -> Option<usize> {
 	return None;
 }
 
+fn get_word_db_name() -> String {
+	let mut db_arg = false;
+	for arg in env::args() {
+		if arg == "-db" {
+			db_arg = true;
+		} else {
+			if db_arg {
+				return arg;
+			}
+		}
+	}
+	return "words_db.txt".to_owned();
+}
+
 fn bot_game(
 	strategy: &mut words_chooser::WordsChooser,
 	input_getter: &input_getter::InputGetter,
@@ -106,7 +120,8 @@ fn main() {
 			return;
 		}
 	}
-	let mut db = db_reader::WordsDb::new(std::path::Path::new("./words_db.txt"), word_len).unwrap();
+	let word_db_path = std::path::Path::new(".").join(get_word_db_name());
+	let mut db = db_reader::WordsDb::new(word_db_path.as_path(), word_len).unwrap();
 	loop {
 		db.sync_new_words();
 		let mut strategy = words_chooser::WordsChooser::new(&mut db.words_iter());
