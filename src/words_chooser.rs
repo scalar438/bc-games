@@ -500,8 +500,8 @@ mod test {
 	//    "010" tells as that word is "bde",
 	//    "011" - "fcb",
 	//    "021" - "cbg",
-	// Because we have no possible answers with more than one words, it is better than previous ones
-	// The "cbg" is a good choise too, because:
+	// Because we have no possible answers with more than one words, the answer "abc" better than previous ones
+	// The "cbg" is a good choise either, because:
 	//    "010" - "bde"
 	//    "110" - "fcb"
 	//    "120" - "abc"
