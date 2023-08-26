@@ -435,106 +435,106 @@ mod test {
 		r.sort();
 		assert_eq!(r, res_expected);
 	}
-}
 
-#[test]
-fn test_no_choise() {
-	let vocabulary: Vec<_> = ["abc", "abd", "bad"]
-		.iter()
-		.map(|x| x.to_string())
-		.collect();
-	let candidate_words = vocabulary.clone();
-	let mut w = WordsChooser {
-		words_container: WordsContainer {
-			vocabulary,
-			candidate_words,
-		},
-		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3,
-		last_word: None,
-	};
+	#[test]
+	fn test_no_choise() {
+		let vocabulary: Vec<_> = ["abc", "abd", "bad"]
+			.iter()
+			.map(|x| x.to_string())
+			.collect();
+		let candidate_words = vocabulary.clone();
+		let mut w = WordsChooser {
+			words_container: WordsContainer {
+				vocabulary,
+				candidate_words,
+			},
+			state: ChoiseState::ReadyToMakeGuess,
+			word_len: 3,
+			last_word: None,
+		};
 
-	assert!(w.make_guess().is_some());
-	assert_eq!(w.state, ChoiseState::WaitForRespond);
-	w.respond_to_guess(&[
-		CharResult::NotPresented,
-		CharResult::NotPresented,
-		CharResult::NotPresented,
-	]);
+		assert!(w.make_guess().is_some());
+		assert_eq!(w.state, ChoiseState::WaitForRespond);
+		w.respond_to_guess(&[
+			CharResult::NotPresented,
+			CharResult::NotPresented,
+			CharResult::NotPresented,
+		]);
 
-	assert!(w.words_container.candidate_words.is_empty());
-	assert!(w.make_guess().is_none());
-}
+		assert!(w.words_container.candidate_words.is_empty());
+		assert!(w.make_guess().is_none());
+	}
 
-#[test]
-fn test_one_choise() {
-	let vocabulary: Vec<_> = ["abc", "abd"].iter().map(|x| x.to_string()).collect();
-	let candidate_words = vocabulary.clone();
-	let mut w = WordsChooser {
-		words_container: WordsContainer {
-			vocabulary,
-			candidate_words,
-		},
-		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3,
-		last_word: None,
-	};
+	#[test]
+	fn test_one_choise() {
+		let vocabulary: Vec<_> = ["abc", "abd"].iter().map(|x| x.to_string()).collect();
+		let candidate_words = vocabulary.clone();
+		let mut w = WordsChooser {
+			words_container: WordsContainer {
+				vocabulary,
+				candidate_words,
+			},
+			state: ChoiseState::ReadyToMakeGuess,
+			word_len: 3,
+			last_word: None,
+		};
 
-	let attempt1 = w.make_guess().unwrap().to_owned();
-	assert_eq!(w.last_word.as_ref().unwrap(), &attempt1);
-	assert!(attempt1 == "abc" || attempt1 == "abd");
-	w.respond_to_guess(&[
-		CharResult::FullMatch,
-		CharResult::FullMatch,
-		CharResult::NotPresented,
-	]);
-	assert_eq!(w.words_container.candidate_words.len(), 1);
-	let attempt2 = w.make_guess().unwrap();
-	assert_ne!(attempt1, attempt2);
-}
+		let attempt1 = w.make_guess().unwrap().to_owned();
+		assert_eq!(w.last_word.as_ref().unwrap(), &attempt1);
+		assert!(attempt1 == "abc" || attempt1 == "abd");
+		w.respond_to_guess(&[
+			CharResult::FullMatch,
+			CharResult::FullMatch,
+			CharResult::NotPresented,
+		]);
+		assert_eq!(w.words_container.candidate_words.len(), 1);
+		let attempt2 = w.make_guess().unwrap();
+		assert_ne!(attempt1, attempt2);
+	}
 
-// In this test is the most reasonable choise as the first attempt is "abc" or "cbg"
-// If we chose "bde", one of the possible answers is "100" is matched with two words - "fcb" and "abc",
-// so we have to guess between them if we get this answer
-// By the same reason, the word "fcb" and "011" as answer tells us the possible word either "abc" or "cbg"
-// For the word "abc" we have three possbile answers (in assumption that our attempt isn't correct):
-//    "010" tells as that word is "bde",
-//    "011" - "fcb",
-//    "021" - "cbg",
-// Because we have no possible answers with more than one words, it is better than previous ones
-// The "cbg" is a good choise too, because:
-//    "010" - "bde"
-//    "110" - "fcb"
-//    "120" - "abc"
-#[test]
-fn test_smartest_choise() {
-	let vocabulary: Vec<_> = ["bde", "fcb", "abc", "cbg"]
-		.iter()
-		.map(|x| x.to_string())
-		.collect();
-	let candidate_words = vocabulary.clone();
-	let mut w = WordsChooser {
-		words_container: WordsContainer {
-			vocabulary,
-			candidate_words,
-		},
-		state: ChoiseState::ReadyToMakeGuess,
-		word_len: 3,
-		last_word: None,
-	};
+	// In this test is the most reasonable choise as the first attempt is "abc" or "cbg"
+	// If we chose "bde", one of the possible answers is "100" is matched with two words - "fcb" and "abc",
+	// so we have to guess between them if we get this answer
+	// By the same reason, the word "fcb" and "011" as answer tells us the possible word either "abc" or "cbg"
+	// For the word "abc" we have three possbile answers (in assumption that our attempt isn't correct):
+	//    "010" tells as that word is "bde",
+	//    "011" - "fcb",
+	//    "021" - "cbg",
+	// Because we have no possible answers with more than one words, it is better than previous ones
+	// The "cbg" is a good choise too, because:
+	//    "010" - "bde"
+	//    "110" - "fcb"
+	//    "120" - "abc"
+	#[test]
+	fn test_smartest_choise() {
+		let vocabulary: Vec<_> = ["bde", "fcb", "abc", "cbg"]
+			.iter()
+			.map(|x| x.to_string())
+			.collect();
+		let candidate_words = vocabulary.clone();
+		let mut w = WordsChooser {
+			words_container: WordsContainer {
+				vocabulary,
+				candidate_words,
+			},
+			state: ChoiseState::ReadyToMakeGuess,
+			word_len: 3,
+			last_word: None,
+		};
 
-	let attempt1 = w.make_guess().unwrap();
-	// Check for the best options
-	dbg!(&attempt1);
-	assert!(attempt1 == "abc" || attempt1 == "cbg");
+		let attempt1 = w.make_guess().unwrap();
+		// Check for the best options
+		dbg!(&attempt1);
+		assert!(attempt1 == "abc" || attempt1 == "cbg");
 
-	// Let's assume we picked "bde". In this case the answer is "010" regardles of an attempt
-	w.respond_to_guess(&[
-		CharResult::NotPresented,
-		CharResult::PartialMatch,
-		CharResult::NotPresented,
-	]);
+		// Let's assume we picked "bde". In this case the answer is "010" regardles of an attempt
+		w.respond_to_guess(&[
+			CharResult::NotPresented,
+			CharResult::PartialMatch,
+			CharResult::NotPresented,
+		]);
 
-	assert_eq!(w.words_container.candidate_words.len(), 1);
-	assert_eq!(w.make_guess().unwrap(), "bde");
+		assert_eq!(w.words_container.candidate_words.len(), 1);
+		assert_eq!(w.make_guess().unwrap(), "bde");
+	}
 }
