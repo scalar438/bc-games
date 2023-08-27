@@ -108,6 +108,10 @@ impl WordsContainer {
 		}
 	}
 
+	// Return all possible words in the order "candidates are first, other last"
+	// This provides the highest priority for the words that match to the previous attempts
+	// Without this ordering the algorithm won't guess the right word if it has only one candidate
+	// left, because any other word won't decrease expected number of candidates
 	fn construct_list_of_words(&self) -> Vec<&str> {
 		if self.candidate_words.is_empty() {
 			return Vec::new();
@@ -139,10 +143,9 @@ impl WordsContainer {
 	}
 }
 
-// Try to increase lexicographically the given array with following conditions:
+// Try to increase lexicographically the given array. Array (before and after) satisfies following conditions:
 // 1) Elements in the array are distinct and sorted
 // 2) Elements in the array are less or equal max_val
-// Precondition: array must be sorted before
 // Return true if we have increased the array, otherwise return false
 fn try_increase(arr: &mut [usize], mut max_val: usize) -> bool {
 	let mut i = arr.len();
