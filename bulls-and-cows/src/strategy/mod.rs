@@ -3,7 +3,7 @@ use std::mem;
 use super::common;
 
 pub trait Strategy {
-	// Init the strategy. After this call the object is ready to start a game
+	// Init the strategy. After this call the object is ready to start a new game
 	fn init(&mut self);
 
 	fn make_guess(&mut self) -> &str;

@@ -63,19 +63,24 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 
 fn main() {
 	const N: i32 = 4;
-	for st in [
-		StrategyType::Naive,
-		StrategyType::AmountInformation,
-		StrategyType::MinMax,
-	] {
-		let mut s = create_strategy(st, N);
 
-		println!(
-			"Strategy type: {:?}, evaluation result: {:?}",
-			st,
-			evaluate_strategy(s.as_mut(), N)
-		);
+	if std::env::args().position(|x| x == "--analyze").is_some() {
+		for st in [
+			StrategyType::Naive,
+			StrategyType::AmountInformation,
+			StrategyType::MinMax,
+		] {
+			let mut s = create_strategy(st, N);
+
+			println!(
+				"Strategy type: {:?}, evaluation result: {:?}",
+				st,
+				evaluate_strategy(s.as_mut(), N)
+			);
+		}
+	} else {
+		let mut s = create_strategy(StrategyType::MinMax, N);
+
+		one_game(s.as_mut());
 	}
-
-	//one_game(s.as_mut());
 }
