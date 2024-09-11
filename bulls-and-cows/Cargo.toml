@@ -1,0 +1,5 @@
+[package]
+name = "bc_game"
+version = "0.1.0"
+authors = ["as.larin@tensor.ru"]
+edition = "2021"

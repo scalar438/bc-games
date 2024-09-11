@@ -1,0 +1,9 @@
+[package]
+name = "wordlie-solver"
+version = "0.1.2"
+authors = ["as.larin@hotmail.com"]
+edition = "2021"
+
+[dependencies]
+colored = "2"
+dialoguer = "0.10"
