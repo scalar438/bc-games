@@ -1,3 +1,6 @@
+use super::Strategy;
+use crate::common;
+use core::mem;
 
 pub struct MinMaxStrategy {
 	all_values: Vec<String>,

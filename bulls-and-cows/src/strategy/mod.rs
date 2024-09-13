@@ -1,8 +1,8 @@
 use super::common;
 
-mod naive;
 mod amount_information;
 mod minmax;
+mod naive;
 
 pub trait Strategy {
 	// Init the strategy. After this call the object is ready to start a new game

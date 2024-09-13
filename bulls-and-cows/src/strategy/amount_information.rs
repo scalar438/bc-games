@@ -1,5 +1,5 @@
-use crate::common;
 use super::Strategy;
+use crate::common;
 use core::mem;
 
 #[derive(Clone)]
