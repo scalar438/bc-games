@@ -3,3 +3,4 @@ members = [
     "bulls-and-cows",
     "wordlie-solver"
 ]
+resolver = "2"
