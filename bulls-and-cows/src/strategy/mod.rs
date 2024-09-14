@@ -20,6 +20,7 @@ pub enum StrategyType {
 	Naive,
 	AmountInformation,
 	MinMax,
+	LambertW,
 }
 
 pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
@@ -27,5 +28,6 @@ pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
 		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
 		StrategyType::AmountInformation => Box::new(amount_information::AmountInfStrategy::new(n)),
 		StrategyType::MinMax => Box::new(minmax::MinMaxStrategy::new(n)),
+		StrategyType::LambertW => todo!(),
 	}
 }

@@ -22,13 +22,19 @@ impl MinMaxStrategy {
 		}
 	}
 
-	fn evaluate_attempt(&self, attempt: &str) -> i32 {
+	fn evaluate_attempt(&self, attempt: &str) -> Vec<i32> {
 		let mut v = [0; 25];
 		for ans in self.candidates.iter() {
 			let bc = common::calc_bc(attempt, ans);
 			v[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
-		*v.iter().max().unwrap()
+		let mut v: Vec<_> = v
+			.iter()
+			.filter_map(|x| if *x != 0 { Some(*x) } else { None })
+			.collect();
+		v.sort();
+		v.reverse();
+		v
 	}
 }
 
@@ -47,7 +53,7 @@ impl Strategy for MinMaxStrategy {
 				self.last_guess = self.candidates[0].clone();
 				return &self.last_guess;
 			}
-			let mut min_value = self.candidates.len() as i32;
+			let mut min_value = vec![self.candidates.len() as i32];
 			let mut hs = std::collections::HashSet::new();
 			for attempt in self.candidates.iter() {
 				let value = self.evaluate_attempt(attempt);
