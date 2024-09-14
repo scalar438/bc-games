@@ -8,9 +8,10 @@ pub trait Strategy {
 	// Init the strategy. After this call the object is ready to start a new game
 	fn init(&mut self);
 
-	fn make_guess(&mut self) -> &str;
+	// Make a guess. None means responses were inconsistent
+	fn make_guess(&mut self) -> Option<&str>;
 
-	fn answer_to_guess(&mut self, bulls: i32, cows: i32);
+	fn respond_to_guess(&mut self, bulls: i32, cows: i32);
 
 	fn _clone_dyn(&self) -> Box<dyn Strategy>;
 }

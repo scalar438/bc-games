@@ -26,12 +26,16 @@ impl Strategy for NaiveStrategy {
 		self.candidates = self.all_values.clone();
 	}
 
-	fn make_guess(&mut self) -> &str {
-		self.last_guess = self.candidates[0].clone();
-		self.last_guess.as_str()
+	fn make_guess(&mut self) -> Option<&str> {
+		if let Some(guess) = self.candidates.first() {
+			self.last_guess = guess.clone();
+			Some(self.last_guess.as_str())
+		} else {
+			None
+		}
 	}
 
-	fn answer_to_guess(&mut self, bulls: i32, cows: i32) {
+	fn respond_to_guess(&mut self, bulls: i32, cows: i32) {
 		let q = mem::replace(&mut self.candidates, Vec::new());
 		self.candidates = q
 			.into_iter()

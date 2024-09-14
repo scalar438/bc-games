@@ -44,40 +44,44 @@ impl Strategy for MinMaxStrategy {
 		self.is_first = true;
 	}
 
-	fn make_guess(&mut self) -> &str {
+	fn make_guess(&mut self) -> Option<&str> {
 		if self.is_first {
 			self.is_first = false;
 			self.last_guess = self.candidates[0].clone();
 		} else {
-			if self.candidates.len() == 1 {
-				self.last_guess = self.candidates[0].clone();
-				return &self.last_guess;
-			}
-			let mut min_value = vec![self.candidates.len() as i32];
-			let mut hs = std::collections::HashSet::new();
-			for attempt in self.candidates.iter() {
-				let value = self.evaluate_attempt(attempt);
-				if min_value > value {
-					min_value = value;
-					self.last_guess = attempt.clone();
+			match self.candidates.len() {
+				0 => return None,
+				1 => {
+					self.last_guess = self.candidates[0].clone();
 				}
-				hs.insert(attempt);
-			}
-			for attempt in self.all_values.iter() {
-				if hs.contains(attempt) {
-					continue;
-				}
-				let value = self.evaluate_attempt(attempt);
-				if min_value > value {
-					min_value = value;
-					self.last_guess = attempt.clone();
+				_ => {
+					let mut min_value = vec![self.candidates.len() as i32];
+					let mut hs = std::collections::HashSet::new();
+					for attempt in self.candidates.iter() {
+						let value = self.evaluate_attempt(attempt);
+						if min_value > value {
+							min_value = value;
+							self.last_guess = attempt.clone();
+						}
+						hs.insert(attempt);
+					}
+					for attempt in self.all_values.iter() {
+						if hs.contains(attempt) {
+							continue;
+						}
+						let value = self.evaluate_attempt(attempt);
+						if min_value > value {
+							min_value = value;
+							self.last_guess = attempt.clone();
+						}
+					}
 				}
 			}
 		}
-		&self.last_guess
+		Some(&self.last_guess)
 	}
 
-	fn answer_to_guess(&mut self, bulls: i32, cows: i32) {
+	fn respond_to_guess(&mut self, bulls: i32, cows: i32) {
 		let q = mem::replace(&mut self.candidates, Vec::new());
 		self.candidates = q
 			.into_iter()

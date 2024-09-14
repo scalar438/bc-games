@@ -11,7 +11,7 @@ struct EvaluationResult {
 	worst_number: String,
 }
 
-fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> EvaluationResult {
+fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<EvaluationResult> {
 	let mut total = 0;
 	let mut worst_attempt = 0;
 	let vals = common::gen_values(n);
@@ -24,13 +24,24 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> EvaluationResult
 		loop {
 			total += 1;
 			let guess = a.make_guess();
-			if guess == x {
-				break;
+			match guess {
+				Some(guess) => {
+					if guess == x {
+						break;
+					}
+					counter += 1;
+					assert!(counter < 20);
+					let bc = common::calc_bc(&guess, &x);
+					a.respond_to_guess(bc.0, bc.1);
+				}
+				None => {
+					println!(
+						"Strategy isn't able to handle all numbers! Problem number: {:?}",
+						x
+					);
+					return None;
+				}
 			}
-			counter += 1;
-			assert!(counter < 20);
-			let bc = common::calc_bc(&guess, &x);
-			a.answer_to_guess(bc.0, bc.1);
 		}
 		if worst_attempt < counter {
 			worst_attempt = counter;
@@ -38,25 +49,29 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> EvaluationResult
 		}
 	}
 
-	EvaluationResult {
+	Some(EvaluationResult {
 		total,
 		worst_attempt,
 		avg: (total as f64) / numbers_count,
 		worst_number,
-	}
+	})
 }
 
 fn one_game(a: &mut dyn strategy::Strategy) {
 	a.init();
 	let mut counter = 1;
 	loop {
-		println!("Guess #{:?}: {:}", counter, a.make_guess());
+		if let Some(guess) = a.make_guess() {
+			println!("Guess #{:?}: {:}", counter, guess);
+		} else {
+			println!("Answers are inconsistent");
+		}
 		counter += 1;
 		let mut s = String::new();
 		std::io::stdin().read_line(&mut s).unwrap();
 		let v: Vec<_> = s.split(' ').map(|x| x.trim().parse().unwrap()).collect();
 		if v.len() == 2 {
-			a.answer_to_guess(v[0], v[1]);
+			a.respond_to_guess(v[0], v[1]);
 		}
 	}
 }
