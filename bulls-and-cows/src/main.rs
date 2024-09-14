@@ -30,7 +30,14 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<Evaluatio
 						break;
 					}
 					counter += 1;
-					assert!(counter < 20);
+					if counter > 30
+					{
+						println!(
+							"It seems strategy felt into an infinite loop. Problem number: {:?}",
+							x
+						);
+						return None;
+					}
 					let bc = common::calc_bc(&guess, &x);
 					a.respond_to_guess(bc.0, bc.1);
 				}
@@ -65,6 +72,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 			println!("Guess #{:?}: {:}", counter, guess);
 		} else {
 			println!("Answers are inconsistent");
+			break;
 		}
 		counter += 1;
 		let mut s = String::new();
@@ -77,13 +85,14 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 }
 
 fn main() {
-	const N: i32 = 4;
+	const N: i32 = 5;
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
 			StrategyType::Naive,
 			StrategyType::AmountInformation,
 			StrategyType::MinMax,
+			StrategyType::Landy,
 		] {
 			let mut s = create_strategy(st, N);
 
@@ -94,7 +103,7 @@ fn main() {
 			);
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::MinMax, N);
+		let mut s = create_strategy(StrategyType::Landy, N);
 
 		one_game(s.as_mut());
 	}

@@ -1,59 +1,85 @@
+use super::common;
 use super::Strategy;
-use crate::common;
 use core::mem;
 
-pub struct MinMaxStrategy {
+#[derive(Clone)]
+pub struct LandyStrategy {
 	all_values: Vec<String>,
 	candidates: Vec<String>,
-	is_first: bool,
 	last_guess: String,
+	inv_values: Vec<f64>,
 	n: i32,
 }
 
-impl MinMaxStrategy {
-	pub fn new(n: i32) -> Self {
-		let all_values = common::gen_values(n);
-		Self {
-			all_values,
-			candidates: Vec::new(),
-			is_first: false,
-			last_guess: String::new(),
-			n: n + 1,
-		}
-	}
-
-	fn evaluate_attempt(&self, attempt: &str) -> Vec<i32> {
+impl LandyStrategy {
+	fn evaluate_attempt(&self, attempt: &str) -> f64 {
 		let mut v = [0; 25];
 		for ans in self.candidates.iter() {
 			let bc = common::calc_bc(attempt, ans);
 			v[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
-		let mut v: Vec<_> = v
-			.iter()
-			.filter_map(|x| if *x != 0 { Some(*x) } else { None })
-			.collect();
-		v.sort();
-		v.reverse();
-		v
+		v.iter()
+			.filter_map(|x| {
+				if *x != 0 {
+					Some(self.inv_values[*x as usize] * (*x as f64))
+				} else {
+					None
+				}
+			})
+			.sum()
+	}
+
+	pub fn new(n: i32) -> Self {
+		let mut all_values = common::gen_values(n);
+		all_values.sort();
+		let l = all_values.len();
+		LandyStrategy {
+			all_values,
+			candidates: Vec::new(),
+			last_guess: String::new(),
+			inv_values: std::iter::once(0.0)
+				.chain((1..=l).map(|x| calc_inv(x as f64)))
+				.collect(),
+			n,
+		}
 	}
 }
 
-impl Strategy for MinMaxStrategy {
+fn calc_inv(n: f64) -> f64 {
+	let mut x = 1.0;
+	let mut y = 1.0;
+	for i in 1.. {
+		let f = i as f64;
+		let z = f.powf(f);
+		if z > n {
+			y = f;
+			break;
+		}
+	}
+	loop {
+		let z = (x + y) / 2.0;
+		if z <= x || z >= y {break;}
+		if z.powf(z) <= n {
+			x = z
+		} else {
+			y = z
+		};
+	}
+	x
+}
+
+impl Strategy for LandyStrategy {
 	fn init(&mut self) {
 		self.candidates = self.all_values.clone();
-		self.is_first = true;
 	}
 
 	fn make_guess(&mut self) -> Option<&str> {
-		if self.is_first {
-			self.is_first = false;
-			self.last_guess = self.candidates[0].clone();
-		} else {
-			if self.candidates.len() == 0 {
-				return None;
-			} else {
-				let mut min_value = vec![(self.candidates.len() + 1) as i32];
+		match self.candidates.len() {
+			0 => return None,
+			1 => self.last_guess = self.candidates[0].clone(),
+			_ => {
 				let mut hs = std::collections::HashSet::new();
+				let mut min_value = (self.candidates.len() * self.candidates.len())as f64;
 				for attempt in self.candidates.iter() {
 					let value = self.evaluate_attempt(attempt);
 					if min_value > value {
@@ -74,6 +100,7 @@ impl Strategy for MinMaxStrategy {
 				}
 			}
 		}
+
 		Some(&self.last_guess)
 	}
 
@@ -89,6 +116,6 @@ impl Strategy for MinMaxStrategy {
 	}
 
 	fn _clone_dyn(&self) -> Box<dyn Strategy> {
-		todo!()
+		Box::new(self.clone())
 	}
 }

@@ -1,6 +1,7 @@
 use super::common;
 
 mod amount_information;
+mod landy;
 mod minmax;
 mod naive;
 
@@ -21,7 +22,7 @@ pub enum StrategyType {
 	Naive,
 	AmountInformation,
 	MinMax,
-	LambertW,
+	Landy,
 }
 
 pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
@@ -29,6 +30,6 @@ pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
 		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
 		StrategyType::AmountInformation => Box::new(amount_information::AmountInfStrategy::new(n)),
 		StrategyType::MinMax => Box::new(minmax::MinMaxStrategy::new(n)),
-		StrategyType::LambertW => todo!(),
+		StrategyType::Landy => Box::new(landy::LandyStrategy::new(n)),
 	}
 }
