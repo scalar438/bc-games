@@ -1,6 +1,5 @@
 use super::Strategy;
 use crate::common;
-use core::mem;
 
 #[derive(Clone)]
 pub struct AmountInfStrategy {
@@ -23,7 +22,7 @@ impl AmountInfStrategy {
 		}
 	}
 
-	fn calc_info(&self, attempt: &str) -> f64 {
+	fn evaluate_attempt(&self, attempt: &str) -> f64 {
 		let mut v = [0; 25];
 		for ans in self.candidates.iter() {
 			let bc = common::calc_bc(attempt, ans);
@@ -61,7 +60,7 @@ impl Strategy for AmountInfStrategy {
 					let mut avg_info = 0.0;
 					let mut hs = std::collections::HashSet::new();
 					for attempt in self.candidates.iter() {
-						let ent = self.calc_info(attempt);
+						let ent = self.evaluate_attempt(attempt);
 						if ent > avg_info {
 							avg_info = ent;
 							self.last_guess = attempt.clone();
@@ -72,7 +71,7 @@ impl Strategy for AmountInfStrategy {
 						if hs.contains(attempt) {
 							continue;
 						}
-						let ent = self.calc_info(attempt);
+						let ent = self.evaluate_attempt(attempt);
 						if ent > avg_info {
 							avg_info = ent;
 							self.last_guess = attempt.clone();
@@ -85,14 +84,10 @@ impl Strategy for AmountInfStrategy {
 	}
 
 	fn respond_to_guess(&mut self, bulls: i32, cows: i32) {
-		let q = mem::replace(&mut self.candidates, Vec::new());
-		self.candidates = q
-			.into_iter()
-			.filter(|x| {
-				let bc = common::calc_bc(&self.last_guess, x);
-				bc.0 == bulls && bc.1 == cows
-			})
-			.collect();
+		self.candidates.retain(|x| {
+			let bc = common::calc_bc(&self.last_guess, x);
+			bc.0 == bulls && bc.1 == cows
+		});
 	}
 
 	fn _clone_dyn(&self) -> Box<dyn Strategy> {

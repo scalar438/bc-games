@@ -1,6 +1,5 @@
 use super::Strategy;
 use crate::common;
-use core::mem;
 
 pub struct MinMaxStrategy {
 	all_values: Vec<String>,
@@ -78,14 +77,10 @@ impl Strategy for MinMaxStrategy {
 	}
 
 	fn respond_to_guess(&mut self, bulls: i32, cows: i32) {
-		let q = mem::replace(&mut self.candidates, Vec::new());
-		self.candidates = q
-			.into_iter()
-			.filter(|x| {
-				let bc = common::calc_bc(&self.last_guess, x);
-				bc.0 == bulls && bc.1 == cows
-			})
-			.collect();
+		self.candidates.retain(|x| {
+			let bc = common::calc_bc(&self.last_guess, x);
+			bc.0 == bulls && bc.1 == cows
+		});
 	}
 
 	fn _clone_dyn(&self) -> Box<dyn Strategy> {

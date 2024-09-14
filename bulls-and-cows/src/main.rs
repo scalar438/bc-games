@@ -30,8 +30,7 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<Evaluatio
 						break;
 					}
 					counter += 1;
-					if counter > 30
-					{
+					if counter > 30 {
 						println!(
 							"It seems strategy felt into an infinite loop. Problem number: {:?}",
 							x
@@ -85,7 +84,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 }
 
 fn main() {
-	const N: i32 = 5;
+	const N: i32 = 6;
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
@@ -103,7 +102,7 @@ fn main() {
 			);
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::Landy, N);
+		let mut s = create_strategy(StrategyType::Naive, N);
 
 		one_game(s.as_mut());
 	}
