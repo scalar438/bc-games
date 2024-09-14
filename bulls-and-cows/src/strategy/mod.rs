@@ -19,9 +19,17 @@ pub trait Strategy {
 
 #[derive(Debug, Clone, Copy)]
 pub enum StrategyType {
+	// The fastest and simplest, but not the most efficient algorithm
+	// Just picks the first number from list of candidates, without any strategy
 	Naive,
+
+	// Strategy that tries to maximize the average amount of information gotten by the attempt
 	AmountInformation,
+
+	// Strategy that tries to minimize the worst case. It isn't the best on average
 	MinMax,
+
+	// Strategy that uses Landy's formula for picking the attempt
 	Landy,
 }
 

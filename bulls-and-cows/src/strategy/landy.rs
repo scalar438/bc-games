@@ -12,6 +12,7 @@ pub struct LandyStrategy {
 }
 
 impl LandyStrategy {
+	// The target function of this strategy. Pick the number with lowest value of it.
 	fn evaluate_attempt(&self, attempt: &str) -> f64 {
 		let mut v = [0; 25];
 		for ans in self.candidates.iter() {
@@ -46,6 +47,7 @@ impl LandyStrategy {
 	}
 }
 
+// Inversion of the function x^x. The answer is calculated by binary search
 fn calc_inv(n: f64) -> f64 {
 	let mut x = 1.0;
 	let mut y = 1.0;
