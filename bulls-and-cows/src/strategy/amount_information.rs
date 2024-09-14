@@ -33,7 +33,7 @@ impl AmountInfStrategy {
 			.filter_map(|x| {
 				if *x != 0 {
 					let p = (*x as f64) / l;
-					Some(p * -f64::ln(p))
+					Some(p * f64::ln(p))
 				} else {
 					None
 				}
@@ -57,11 +57,11 @@ impl Strategy for AmountInfStrategy {
 				0 => return None,
 				1 => self.last_guess = self.candidates[0].clone(),
 				_ => {
-					let mut avg_info = 0.0;
+					let mut avg_info = 10000000.0;
 					let mut hs = std::collections::HashSet::new();
 					for attempt in self.candidates.iter() {
 						let ent = self.evaluate_attempt(attempt);
-						if ent > avg_info {
+						if ent < avg_info {
 							avg_info = ent;
 							self.last_guess = attempt.clone();
 						}
@@ -72,7 +72,7 @@ impl Strategy for AmountInfStrategy {
 							continue;
 						}
 						let ent = self.evaluate_attempt(attempt);
-						if ent > avg_info {
+						if ent < avg_info {
 							avg_info = ent;
 							self.last_guess = attempt.clone();
 						}

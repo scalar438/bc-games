@@ -8,6 +8,7 @@ pub struct LandyStrategy {
 	last_guess: String,
 	inv_values: Vec<f64>,
 	n: i32,
+	is_first: bool,
 }
 
 impl LandyStrategy {
@@ -20,7 +21,7 @@ impl LandyStrategy {
 		v.iter()
 			.filter_map(|x| {
 				if *x != 0 {
-					Some(self.inv_values[*x as usize] * (*x as f64))
+					Some(self.inv_values[*x] * (*x as f64))
 				} else {
 					None
 				}
@@ -40,6 +41,7 @@ impl LandyStrategy {
 				.chain((1..=l).map(|x| calc_inv(x as f64)))
 				.collect(),
 			n,
+			is_first: true,
 		}
 	}
 }
@@ -72,31 +74,37 @@ fn calc_inv(n: f64) -> f64 {
 impl Strategy for LandyStrategy {
 	fn init(&mut self) {
 		self.candidates = self.all_values.clone();
+		self.is_first = true;
 	}
 
 	fn make_guess(&mut self) -> Option<&str> {
-		match self.candidates.len() {
-			0 => return None,
-			1 => self.last_guess = self.candidates[0].clone(),
-			_ => {
-				let mut hs = std::collections::HashSet::new();
-				let mut min_value = (self.candidates.len() * self.candidates.len()) as f64;
-				for attempt in self.candidates.iter() {
-					let value = self.evaluate_attempt(attempt);
-					if min_value > value {
-						min_value = value;
-						self.last_guess = attempt.clone();
+		if self.is_first {
+			self.is_first = false;
+			self.last_guess = self.candidates[0].clone();
+		} else {
+			match self.candidates.len() {
+				0 => return None,
+				1 => self.last_guess = self.candidates[0].clone(),
+				_ => {
+					let mut hs = std::collections::HashSet::new();
+					let mut min_value = (self.candidates.len() * self.candidates.len()) as f64;
+					for attempt in self.candidates.iter() {
+						let value = self.evaluate_attempt(attempt);
+						if min_value > value {
+							min_value = value;
+							self.last_guess = attempt.clone();
+						}
+						hs.insert(attempt);
 					}
-					hs.insert(attempt);
-				}
-				for attempt in self.all_values.iter() {
-					if hs.contains(attempt) {
-						continue;
-					}
-					let value = self.evaluate_attempt(attempt);
-					if min_value > value {
-						min_value = value;
-						self.last_guess = attempt.clone();
+					for attempt in self.all_values.iter() {
+						if hs.contains(attempt) {
+							continue;
+						}
+						let value = self.evaluate_attempt(attempt);
+						if min_value > value {
+							min_value = value;
+							self.last_guess = attempt.clone();
+						}
 					}
 				}
 			}

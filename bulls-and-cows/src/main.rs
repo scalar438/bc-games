@@ -1,5 +1,7 @@
 use strategy::{create_strategy, StrategyType};
 
+use std::time;
+
 mod common;
 mod strategy;
 
@@ -9,9 +11,12 @@ struct EvaluationResult {
 	worst_attempt: i32,
 	avg: f64,
 	worst_number: String,
+	time: std::time::Duration,
 }
 
 fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<EvaluationResult> {
+	let start_time = std::time::Instant::now();
+
 	let mut total = 0;
 	let mut worst_attempt = 0;
 	let vals = common::gen_values(n);
@@ -60,6 +65,7 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<Evaluatio
 		worst_attempt,
 		avg: (total as f64) / numbers_count,
 		worst_number,
+		time: std::time::Instant::now() - start_time,
 	})
 }
 
@@ -84,7 +90,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 }
 
 fn main() {
-	const N: i32 = 6;
+	const N: i32 = 3;
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
