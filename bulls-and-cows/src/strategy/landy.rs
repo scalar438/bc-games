@@ -1,13 +1,18 @@
 use super::common;
 use super::Strategy;
+use std::rc::Rc;
+
+struct StaticData {
+	n: i32,
+	inv_values: Vec<f64>,
+	all_values: Vec<String>,
+}
 
 #[derive(Clone)]
 pub struct LandyStrategy {
-	all_values: Vec<String>,
 	candidates: Vec<String>,
 	last_guess: String,
-	inv_values: Vec<f64>,
-	n: i32,
+	static_data: Rc<StaticData>,
 	is_first: bool,
 }
 
@@ -17,12 +22,12 @@ impl LandyStrategy {
 		let mut v = [0; 25];
 		for ans in self.candidates.iter() {
 			let bc = common::calc_bc(attempt, ans);
-			v[(bc.0 * self.n + bc.1) as usize] += 1;
+			v[(bc.0 * self.static_data.n + bc.1) as usize] += 1;
 		}
 		v.iter()
 			.filter_map(|x| {
 				if *x != 0 {
-					Some(self.inv_values[*x] * (*x as f64))
+					Some(self.static_data.inv_values[*x] * (*x as f64))
 				} else {
 					None
 				}
@@ -34,14 +39,17 @@ impl LandyStrategy {
 		let mut all_values = common::gen_values(n);
 		all_values.sort();
 		let l = all_values.len();
-		LandyStrategy {
-			all_values,
-			candidates: Vec::new(),
-			last_guess: String::new(),
+		let s = StaticData {
+			n,
 			inv_values: std::iter::once(0.0)
 				.chain((1..=l).map(|x| calc_inv(x as f64)))
 				.collect(),
-			n,
+			all_values,
+		};
+		LandyStrategy {
+			candidates: Vec::new(),
+			static_data: Rc::new(s),
+			last_guess: String::new(),
 			is_first: true,
 		}
 	}
@@ -75,7 +83,7 @@ fn calc_inv(n: f64) -> f64 {
 
 impl Strategy for LandyStrategy {
 	fn init(&mut self) {
-		self.candidates = self.all_values.clone();
+		self.candidates = self.static_data.all_values.clone();
 		self.is_first = true;
 	}
 
@@ -98,7 +106,7 @@ impl Strategy for LandyStrategy {
 						}
 						hs.insert(attempt);
 					}
-					for attempt in self.all_values.iter() {
+					for attempt in self.static_data.all_values.iter() {
 						if hs.contains(attempt) {
 							continue;
 						}
