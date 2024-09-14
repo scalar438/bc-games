@@ -1,7 +1,5 @@
 use strategy::{create_strategy, StrategyType};
 
-use std::time;
-
 mod common;
 mod strategy;
 
@@ -14,7 +12,7 @@ struct EvaluationResult {
 	time: std::time::Duration,
 }
 
-fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<EvaluationResult> {
+fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
 	let mut total = 0;
@@ -36,21 +34,19 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<Evaluatio
 					}
 					counter += 1;
 					if counter > 30 {
-						println!(
-							"It seems strategy felt into an infinite loop. Problem number: {:?}",
+						return Err(format!(
+							"Possible an infinite loop. Problem number: {:?}",
 							x
-						);
-						return None;
+						));
 					}
 					let bc = common::calc_bc(&guess, &x);
 					a.respond_to_guess(bc.0, bc.1);
 				}
 				None => {
-					println!(
-						"Strategy isn't able to handle all numbers! Problem number: {:?}",
+					return Err(format!(
+						"The strategy returned None. Problem number: {:?}",
 						x
-					);
-					return None;
+					))
 				}
 			}
 		}
@@ -60,7 +56,7 @@ fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Option<Evaluatio
 		}
 	}
 
-	Some(EvaluationResult {
+	Ok(EvaluationResult {
 		total,
 		worst_attempt,
 		avg: (total as f64) / numbers_count,
@@ -90,7 +86,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 }
 
 fn main() {
-	const N: i32 = 3;
+	const N: i32 = 4;
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
@@ -101,11 +97,24 @@ fn main() {
 		] {
 			let mut s = create_strategy(st, N);
 
-			println!(
-				"Strategy type: {:?}, evaluation result: {:?}",
-				st,
-				evaluate_strategy(s.as_mut(), N)
-			);
+			match evaluate_strategy(s.as_mut(), N) {
+				Ok(res) => {
+					println!("Strategy type: {:?}, check successfull. Results", st);
+					println!(
+						"Total number of guesses {:}, average {:}",
+						res.total, res.avg
+					);
+					println!(
+						"Worst number {:} guessed with {:} attempts",
+						res.worst_number, res.worst_attempt
+					);
+					println!("Total time: {:?}\n", res.time);
+				}
+				Err(s) => println!(
+					"Strategy type: {:?} isn't able to solve the puzzle. Error message: {:}",
+					st, s
+				),
+			}
 		}
 	} else {
 		let mut s = create_strategy(StrategyType::Naive, N);
