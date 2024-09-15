@@ -5,7 +5,7 @@ mod landy;
 mod minmax;
 mod naive;
 
-pub trait Strategy {
+pub trait Strategy: Send {
 	// Init the strategy. After this call the object is ready to start a new game
 	fn init(&mut self);
 
@@ -14,7 +14,7 @@ pub trait Strategy {
 
 	fn respond_to_guess(&mut self, bulls: i32, cows: i32);
 
-	fn _clone_dyn(&self) -> Box<dyn Strategy>;
+	fn clone_strategy(&self) -> Box<dyn Strategy>;
 }
 
 #[derive(Debug, Clone, Copy)]

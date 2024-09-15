@@ -1,6 +1,7 @@
 use super::Strategy;
 use crate::common;
 
+#[derive(Clone)]
 pub struct MinMaxStrategy {
 	all_values: Vec<String>,
 	candidates: Vec<String>,
@@ -83,7 +84,7 @@ impl Strategy for MinMaxStrategy {
 		});
 	}
 
-	fn _clone_dyn(&self) -> Box<dyn Strategy> {
-		todo!()
+	fn clone_strategy(&self) -> Box<dyn Strategy> {
+		Box::new(self.clone())
 	}
 }

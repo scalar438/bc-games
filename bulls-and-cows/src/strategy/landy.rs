@@ -1,6 +1,6 @@
 use super::common;
 use super::Strategy;
-use std::rc::Rc;
+use std::sync::Arc;
 
 struct StaticData {
 	n: i32,
@@ -12,7 +12,7 @@ struct StaticData {
 pub struct LandyStrategy {
 	candidates: Vec<String>,
 	last_guess: String,
-	static_data: Rc<StaticData>,
+	static_data: Arc<StaticData>,
 	is_first: bool,
 }
 
@@ -48,7 +48,7 @@ impl LandyStrategy {
 		};
 		LandyStrategy {
 			candidates: Vec::new(),
-			static_data: Rc::new(s),
+			static_data: Arc::new(s),
 			last_guess: String::new(),
 			is_first: true,
 		}
@@ -130,7 +130,7 @@ impl Strategy for LandyStrategy {
 		});
 	}
 
-	fn _clone_dyn(&self) -> Box<dyn Strategy> {
+	fn clone_strategy(&self) -> Box<dyn Strategy> {
 		Box::new(self.clone())
 	}
 }

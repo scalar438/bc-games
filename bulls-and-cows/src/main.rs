@@ -1,68 +1,147 @@
+use std::{
+	mem,
+	num::NonZero,
+	sync::{mpsc::channel, Arc, Mutex},
+};
+
 use strategy::{create_strategy, StrategyType};
 
 mod common;
 mod strategy;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct EvaluationResult {
 	total: i32,
-	worst_attempt: i32,
+	worst_guess_count: i32,
 	avg: f64,
 	worst_number: String,
 	time: std::time::Duration,
 }
 
-fn evaluate_strategy(a: &mut dyn strategy::Strategy, n: i32) -> Result<EvaluationResult, String> {
-	let start_time = std::time::Instant::now();
+fn evaluate_strategy_one_thread(
+	strategy: &mut dyn strategy::Strategy,
+	vals: Arc<Mutex<Vec<String>>>,
+) -> Result<EvaluationResult, String> {
+	const CHUNK_SIZE: usize = 20;
 
 	let mut total = 0;
-	let mut worst_attempt = 0;
-	let vals = common::gen_values(n);
-	let numbers_count = vals.len() as f64;
+	let mut worst_guess_count = 0;
 	let mut worst_number = String::new();
-	for x in vals {
-		a.init();
 
-		let mut counter = 1;
-		loop {
-			total += 1;
-			let guess = a.make_guess();
-			match guess {
-				Some(guess) => {
-					if guess == x {
-						break;
-					}
-					counter += 1;
-					if counter > 30 {
-						return Err(format!(
-							"Possible an infinite loop. Problem number: {:?}",
-							x
-						));
-					}
-					let bc = common::calc_bc(&guess, &x);
-					a.respond_to_guess(bc.0, bc.1);
+	loop {
+		let cur_values;
+		{
+			let mut vals = vals.lock().unwrap();
+			let n = vals.len();
+			if n < CHUNK_SIZE {
+				if n == 0 {
+					break;
 				}
-				None => {
-					return Err(format!(
-						"The strategy returned None. Problem number: {:?}",
-						x
-					))
-				}
+				cur_values = mem::replace(vals.as_mut(), Vec::new());
+			} else {
+				cur_values = vals.drain(n - CHUNK_SIZE..n).collect();
 			}
 		}
-		if worst_attempt < counter {
-			worst_attempt = counter;
-			worst_number = x;
+
+		for x in cur_values {
+			strategy.init();
+
+			let mut counter = 1;
+			loop {
+				total += 1;
+				let guess = strategy.make_guess();
+
+				match guess {
+					Some(guess) => {
+						if guess == x {
+							break;
+						}
+						counter += 1;
+						if counter > 30 {
+							return Err(format!(
+								"Probably it is an infinite loop. Problem number: {x}"
+							));
+						}
+						let (b, c) = common::calc_bc(guess, &x);
+						strategy.respond_to_guess(b, c);
+					}
+
+					None => {
+						return Err(format!("The strategy returned None. Problem number: {x}"));
+					}
+				}
+			}
+			if counter > worst_guess_count {
+				worst_guess_count = counter;
+				worst_number = x;
+			}
 		}
 	}
 
 	Ok(EvaluationResult {
 		total,
-		worst_attempt,
-		avg: (total as f64) / numbers_count,
+		worst_guess_count,
 		worst_number,
-		time: std::time::Instant::now() - start_time,
+		avg: 0.0,
+		time: Default::default(),
 	})
+}
+
+fn evaluate_strategy(
+	strategy: &mut dyn strategy::Strategy,
+	n: i32,
+) -> Result<EvaluationResult, String> {
+	let start_time = std::time::Instant::now();
+
+	let vals = common::gen_values(n);
+	let numbers_count = vals.len() as f64;
+
+	let vals = Mutex::new(vals);
+	let vals = Arc::new(vals);
+
+	let (sx, rx) = channel();
+
+	let mut join_handles = Vec::new();
+	for _ in 0..std::thread::available_parallelism()
+		.unwrap_or(NonZero::new(1).unwrap())
+		.get()
+	{
+		let sx = sx.clone();
+		let vals = vals.clone();
+		let mut strategy = strategy.clone_strategy();
+
+		join_handles.push(std::thread::spawn(move || {
+			sx.send(evaluate_strategy_one_thread(strategy.as_mut(), vals))
+				.unwrap();
+		}));
+	}
+	drop(sx);
+	let mut res = EvaluationResult::default();
+	let mut error_string = None;
+	for res_partial in rx {
+		match res_partial {
+			Ok(res_partial) => {
+				res.total += res_partial.total;
+				if res.worst_guess_count < res_partial.worst_guess_count {
+					res.worst_guess_count = res_partial.worst_guess_count;
+					res.worst_number = res_partial.worst_number;
+				}
+			}
+			Err(err) => {
+				vals.lock().unwrap().clear();
+				error_string = Some(err);
+				break;
+			}
+		}
+	}
+	join_handles.into_iter().for_each(|x| x.join().unwrap());
+	if let Some(err) = error_string {
+		Err(err)
+	} else {
+		res.avg = res.total as f64 / numbers_count;
+		res.time = std::time::Instant::now() - start_time;
+		Ok(res)
+	}
 }
 
 fn one_game(a: &mut dyn strategy::Strategy) {
@@ -106,7 +185,7 @@ fn main() {
 					);
 					println!(
 						"Worst number {:} guessed with {:} attempts",
-						res.worst_number, res.worst_attempt
+						res.worst_number, res.worst_guess_count
 					);
 					println!("Total time: {:?}\n", res.time);
 				}
@@ -117,7 +196,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::Naive, N);
+		let mut s = create_strategy(StrategyType::Landy, N);
 
 		one_game(s.as_mut());
 	}

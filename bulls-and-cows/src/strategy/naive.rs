@@ -41,7 +41,7 @@ impl Strategy for NaiveStrategy {
 		});
 	}
 
-	fn _clone_dyn(&self) -> Box<dyn Strategy> {
+	fn clone_strategy(&self) -> Box<dyn Strategy> {
 		Box::new(self.clone())
 	}
 }

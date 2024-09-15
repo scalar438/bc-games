@@ -90,7 +90,7 @@ impl Strategy for AmountInfStrategy {
 		});
 	}
 
-	fn _clone_dyn(&self) -> Box<dyn Strategy> {
-		todo!()
+	fn clone_strategy(&self) -> Box<dyn Strategy> {
+		Box::new(self.clone())
 	}
 }
