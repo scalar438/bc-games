@@ -193,7 +193,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::MinAvg, N);
+		let mut s = create_strategy(StrategyType::MinMax, N);
 
 		one_game(s.as_mut());
 	}
