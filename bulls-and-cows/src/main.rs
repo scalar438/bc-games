@@ -111,13 +111,12 @@ fn evaluate_strategy(
 		let mut strategy = strategy.clone_strategy();
 
 		join_handles.push(std::thread::spawn(move || {
-			sx.send(evaluate_strategy_one_thread(strategy.as_mut(), vals))
-				.unwrap();
+			let res = evaluate_strategy_one_thread(strategy.as_mut(), vals);
+			sx.send(res).unwrap();
 		}));
 	}
 	drop(sx);
 	let mut res = EvaluationResult::default();
-	let mut error_string = None;
 	for res_partial in rx {
 		match res_partial {
 			Ok(res_partial) => {
@@ -129,19 +128,16 @@ fn evaluate_strategy(
 			}
 			Err(err) => {
 				vals.lock().unwrap().clear();
-				error_string = Some(err);
-				break;
+				join_handles.into_iter().for_each(|x| x.join().unwrap());
+				return Err(err);
 			}
 		}
 	}
 	join_handles.into_iter().for_each(|x| x.join().unwrap());
-	if let Some(err) = error_string {
-		Err(err)
-	} else {
-		res.avg = res.total as f64 / numbers_count;
-		res.time = std::time::Instant::now() - start_time;
-		Ok(res)
-	}
+
+	res.avg = res.total as f64 / numbers_count;
+	res.time = std::time::Instant::now() - start_time;
+	Ok(res)
 }
 
 fn one_game(a: &mut dyn strategy::Strategy) {
@@ -173,6 +169,7 @@ fn main() {
 			StrategyType::AmountInformation,
 			StrategyType::MinMax,
 			StrategyType::Landy,
+			StrategyType::MinAvg,
 		] {
 			let mut s = create_strategy(st, N);
 
@@ -196,7 +193,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::Landy, N);
+		let mut s = create_strategy(StrategyType::MinAvg, N);
 
 		one_game(s.as_mut());
 	}

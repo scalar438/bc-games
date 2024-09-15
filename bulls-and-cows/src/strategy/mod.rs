@@ -2,6 +2,7 @@ use super::common;
 
 mod amount_information;
 mod landy;
+mod min_avg;
 mod minmax;
 mod naive;
 
@@ -20,7 +21,7 @@ pub trait Strategy: Send {
 #[derive(Debug, Clone, Copy)]
 pub enum StrategyType {
 	// The fastest and simplest, but not the most efficient algorithm
-	// Just picks the first number from list of candidates, without any strategy
+	// Just picks the first number from the list of candidates, without any strategy
 	Naive,
 
 	// Strategy that tries to maximize the average amount of information gotten by the attempt
@@ -29,8 +30,11 @@ pub enum StrategyType {
 	// Strategy that tries to minimize the worst case. It isn't the best on average
 	MinMax,
 
-	// Strategy that uses Landy's formula for picking the attempt
+	// Strategy that uses Landy's formula for picking an attempt
 	Landy,
+
+	// Strategy that tries to minimize the average candidates count on the next step
+	MinAvg,
 }
 
 pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
@@ -39,5 +43,6 @@ pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
 		StrategyType::AmountInformation => Box::new(amount_information::AmountInfStrategy::new(n)),
 		StrategyType::MinMax => Box::new(minmax::MinMaxStrategy::new(n)),
 		StrategyType::Landy => Box::new(landy::LandyStrategy::new(n)),
+		StrategyType::MinAvg => Box::new(min_avg::MinAvg::new(n)),
 	}
 }
