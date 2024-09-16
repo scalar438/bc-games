@@ -160,6 +160,6 @@ pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
 		StrategyType::AmountInformation => Box::new(amount_information::AmountInfStrategy::new(n)),
 		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(n)),
 		StrategyType::Landy => Box::new(landy::LandyStrategy::new(n)),
-		StrategyType::MinAvg => Box::new(min_avg::MinAvg::new(n)),
+		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(n)),
 	}
 }
