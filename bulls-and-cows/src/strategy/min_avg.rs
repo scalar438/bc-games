@@ -10,7 +10,7 @@ impl TargetFunc for MinAvgFunc {
 		Self {}
 	}
 
-	fn evaluate_distribution(&self, distribution: &[i32]) -> Self::EvaluationResult {
+	fn evaluate_distribution(&self, distribution: &[i32], _: i32) -> Self::EvaluationResult {
 		distribution
 			.iter()
 			.filter_map(|x| {

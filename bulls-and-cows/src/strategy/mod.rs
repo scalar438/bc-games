@@ -23,7 +23,11 @@ trait TargetFunc: Clone + Send {
 
 	fn new(n: i32) -> Self;
 
-	fn evaluate_distribution(&self, distribution: &[i32]) -> Self::EvaluationResult;
+	fn evaluate_distribution(
+		&self,
+		distribution: &[i32],
+		current_candidates: i32,
+	) -> Self::EvaluationResult;
 
 	fn get_initial_value(&mut self) -> Self::EvaluationResult;
 }
@@ -35,7 +39,7 @@ trait TargetFunc: Clone + Send {
 #[derive(Clone)]
 struct BasicStrategy<F: TargetFunc>
 where
-	F::EvaluationResult: Ord,
+	F::EvaluationResult: PartialOrd,
 {
 	all_values: Vec<String>,
 	candidates: Vec<String>,
@@ -47,7 +51,7 @@ where
 
 impl<F: TargetFunc> BasicStrategy<F>
 where
-	F::EvaluationResult: Ord,
+	F::EvaluationResult: PartialOrd,
 {
 	fn new(n: i32) -> BasicStrategy<F> {
 		let all_values = common::gen_values(n);
@@ -71,13 +75,14 @@ where
 			.iter()
 			.filter_map(|x| if *x != 0 { Some(*x) } else { None })
 			.collect();
-		self.func.evaluate_distribution(&v[..])
+		self.func
+			.evaluate_distribution(&v[..], self.candidates.len() as i32)
 	}
 }
 
 impl<F: TargetFunc + 'static> Strategy for BasicStrategy<F>
 where
-	F::EvaluationResult: Ord + core::fmt::Debug,
+	F::EvaluationResult: PartialOrd + core::fmt::Debug,
 {
 	fn init(&mut self) {
 		self.is_first = true;
@@ -157,7 +162,9 @@ pub enum StrategyType {
 pub fn create_strategy(t: StrategyType, n: i32) -> Box<dyn Strategy> {
 	match t {
 		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
-		StrategyType::AmountInformation => Box::new(amount_information::AmountInfStrategy::new(n)),
+		StrategyType::AmountInformation => {
+			Box::new(BasicStrategy::<amount_information::AmountInfFunc>::new(n))
+		}
 		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(n)),
 		StrategyType::Landy => Box::new(landy::LandyStrategy::new(n)),
 		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(n)),

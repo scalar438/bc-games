@@ -10,7 +10,7 @@ impl TargetFunc for MinMaxFunc {
 		Self {}
 	}
 
-	fn evaluate_distribution(&self, distribution: &[i32]) -> Self::EvaluationResult {
+	fn evaluate_distribution(&self, distribution: &[i32], _: i32) -> Self::EvaluationResult {
 		let mut res: Vec<_> = distribution.iter().map(|x| *x).collect();
 		res.sort();
 		res.reverse();
