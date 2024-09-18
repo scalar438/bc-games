@@ -2,28 +2,27 @@ use super::TargetFunc;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct LandyFunc
-{
-	inv_values: Arc<Vec<f64>>
+pub struct LandyFunc {
+	inv_values: Arc<Vec<f64>>,
 }
 
-impl TargetFunc for LandyFunc
-{
+impl TargetFunc for LandyFunc {
 	type EvaluationResult = f64;
 
 	fn new(_: i32) -> Self {
 		let l = 10000;
-		Self{inv_values: Arc::new(std::iter::once(0.0)
-				.chain((1..=l).map(|x| calc_inv(x as f64)))
-				.collect())}
+		Self {
+			inv_values: Arc::new(
+				std::iter::once(0.0)
+					.chain((1..=l).map(|x| calc_inv(x as f64)))
+					.collect(),
+			),
+		}
 	}
 
-	fn evaluate_distribution(
-			&self,
-			distribution: &[i32],
-			_: i32,
-		) -> Self::EvaluationResult {
-			distribution.iter()
+	fn evaluate_distribution(&self, distribution: &[i32], _: i32) -> Self::EvaluationResult {
+		distribution
+			.iter()
 			.filter_map(|x| {
 				if *x != 0 {
 					Some(self.inv_values[*x as usize] * (*x as f64))
