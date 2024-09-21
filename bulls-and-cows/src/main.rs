@@ -7,6 +7,7 @@ use std::{
 use strategy::{create_strategy, StrategyType};
 
 mod common;
+mod game_params;
 mod strategy;
 
 #[derive(Debug, Default)]

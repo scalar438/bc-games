@@ -23,23 +23,29 @@ impl Display for Number {
 	}
 }
 
+pub trait RefIter {
+	type Item;
+
+	fn next(&mut self) -> Option<&Self::Item>;
+}
+
 pub struct GameParams {
-	num_of_digits: u8,
+	number_len: u8,
 	has_repetitions: bool,
-	digits_set_size: u8,
+	total_digits_number: u8,
 }
 
 const MAX_DIGITS_SET_SIZE: u8 = 36;
 
 impl GameParams {
-	pub fn new(num_of_digits: u8) -> Self {
-		if num_of_digits > MAX_DIGITS_SET_SIZE {
+	pub fn new(number_len: u8) -> Self {
+		if number_len > MAX_DIGITS_SET_SIZE {
 			panic!("num_of_digits too large");
 		}
 		Self {
-			num_of_digits,
+			number_len,
 			has_repetitions: false,
-			digits_set_size: 10,
+			total_digits_number: 10,
 		}
 	}
 
@@ -48,19 +54,23 @@ impl GameParams {
 		self
 	}
 
-	pub fn with_digits_set_size(mut self, ds: u8) -> Self {
+	pub fn with_total_digits_number(mut self, ds: u8) -> Self {
 		if ds > MAX_DIGITS_SET_SIZE {
 			panic!("Number of digits can't be more than {MAX_DIGITS_SET_SIZE}");
 		}
-		self.digits_set_size = ds;
+		self.total_digits_number = ds;
 		self
 	}
 
-	pub fn get_numbers_iter(&self) -> Box<dyn Iterator<Item = &Number>> {
+	pub fn get_numbers_iter(&self) -> Box<dyn RefIter<Item = Number>> {
 		if !self.has_repetitions {
 			todo!()
 		} else {
-			Box::new(NumbersWithRepetitions{})
+			Box::new(NumbersWithRepetitions {
+				cur_number: None,
+				number_len: self.number_len,
+				total_digits_number: self.total_digits_number,
+			})
 		}
 	}
 
@@ -104,7 +114,7 @@ impl GameParams {
 	}
 
 	fn to_char(&self, b: u8) -> Result<char, String> {
-		if b >= self.digits_set_size {
+		if b >= self.total_digits_number {
 			return Err(format!("value {b} is too large"));
 		}
 		match b {
@@ -120,7 +130,7 @@ impl GameParams {
 			'A'..='Z' => ((c as u8) - ('A' as u8) + 10) as u8,
 			_ => return Err(format!("Char {c} isn't in valid range")),
 		};
-		if v >= self.digits_set_size {
+		if v >= self.total_digits_number {
 			Err(format!("Char {c} represents too large digit"))
 		} else {
 			Ok(v)
@@ -142,22 +152,24 @@ impl Iterator for NumbersWithoutRepetitions {
 
 struct NumbersWithRepetitions {
 	cur_number: Option<Number>,
-	total_numbers: u8,
-	max_value: u8,
+	number_len: u8,
+	total_digits_number: u8,
 }
 
-impl NumbersWithRepetitions {
-	pub fn next(&mut self) -> Option<&Number> {
+impl RefIter for NumbersWithRepetitions {
+	type Item = Number;
+
+	fn next(&mut self) -> Option<&Self::Item> {
 		match &mut self.cur_number {
 			Some(num) => {
-				if !increase_vector(&mut num.data, self.max_value) {
+				if !increase_vector(&mut num.data, self.total_digits_number) {
 					self.cur_number = None;
 				}
 			}
 
 			None => {
 				let v = std::iter::repeat(0)
-					.take(self.total_numbers as usize)
+					.take(self.number_len as usize)
 					.collect();
 
 				self.cur_number = Some(Number { data: v });
@@ -276,7 +288,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_6() {
-		let g = GameParams::new(5).with_digits_set_size(6);
+		let g = GameParams::new(5).with_total_digits_number(6);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert!(g.to_char(6).is_err());
@@ -286,7 +298,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_10() {
-		let g = GameParams::new(5).with_digits_set_size(10);
+		let g = GameParams::new(5).with_total_digits_number(10);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -297,7 +309,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_17() {
-		let g = GameParams::new(5).with_digits_set_size(17);
+		let g = GameParams::new(5).with_total_digits_number(17);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -310,7 +322,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_6() {
-		let g = GameParams::new(2).with_digits_set_size(6);
+		let g = GameParams::new(2).with_total_digits_number(6);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert!(g.to_u8('6').is_err());
@@ -320,7 +332,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_10() {
-		let g = GameParams::new(2).with_digits_set_size(10);
+		let g = GameParams::new(2).with_total_digits_number(10);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
@@ -331,7 +343,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_13() {
-		let g = GameParams::new(2).with_digits_set_size(13);
+		let g = GameParams::new(2).with_total_digits_number(13);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
