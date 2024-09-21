@@ -162,7 +162,9 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 }
 
 fn main() {
-	const N: i32 = 4;
+	const N: u8 = 4;
+
+	let g = game_params::GameParams::new(N as u8);
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
@@ -172,9 +174,9 @@ fn main() {
 			StrategyType::Landy,
 			StrategyType::MinAvg,
 		] {
-			let mut s = create_strategy(st, N);
+			let mut s = create_strategy(st, &g);
 
-			match evaluate_strategy(s.as_mut(), N) {
+			match evaluate_strategy(s.as_mut(), g.number_len() as i32) {
 				Ok(res) => {
 					println!("Strategy type: {:?}, check successfull. Results", st);
 					println!(
@@ -194,7 +196,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::MinMax, N);
+		let mut s = create_strategy(StrategyType::MinMax, &g);
 
 		one_game(s.as_mut());
 	}

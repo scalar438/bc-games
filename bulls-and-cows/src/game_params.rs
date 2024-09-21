@@ -1,10 +1,6 @@
-use std::{
-	fmt::{Display, Formatter},
-	marker::PhantomData,
-	mem,
-};
+use std::fmt::{Display, Formatter};
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone)]
 pub struct Number {
 	data: Vec<u8>,
 }
@@ -40,13 +36,17 @@ const MAX_DIGITS_SET_SIZE: u8 = 36;
 impl GameParams {
 	pub fn new(number_len: u8) -> Self {
 		if number_len > MAX_DIGITS_SET_SIZE {
-			panic!("num_of_digits too large");
+			panic!("number_len is too large");
 		}
 		Self {
 			number_len,
 			has_repetitions: false,
 			total_digits_number: 10,
 		}
+	}
+
+	pub fn number_len(&self) -> u8 {
+		self.number_len
 	}
 
 	pub fn with_repetitions(mut self, r: bool) -> Self {
@@ -62,18 +62,6 @@ impl GameParams {
 		self
 	}
 
-	pub fn get_numbers_iter(&self) -> Box<dyn RefIter<Item = Number>> {
-		if !self.has_repetitions {
-			todo!()
-		} else {
-			Box::new(NumbersWithRepetitions {
-				cur_number: None,
-				number_len: self.number_len,
-				total_digits_number: self.total_digits_number,
-			})
-		}
-	}
-
 	fn to_byte_vec_value(&self, s: &str) -> Option<Number> {
 		let mut res = Vec::new();
 		let mut digit_presented = vec![false; MAX_DIGITS_SET_SIZE as usize];
@@ -81,7 +69,7 @@ impl GameParams {
 			match self.to_u8(c) {
 				Ok(v) => {
 					if !self.has_repetitions && digit_presented[v as usize] {
-						// It's a repetitions
+						// It is a repetition
 						return None;
 					}
 					digit_presented[v as usize] = true;
@@ -136,6 +124,51 @@ impl GameParams {
 			Ok(v)
 		}
 	}
+
+	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
+		let mut count_a = vec![0; self.total_digits_number as usize];
+		let mut count_b = count_a.clone();
+		let mut bulls = 0;
+		for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
+			if *a == *b {
+				bulls += 1;
+			}
+			count_a[*digit_a as usize] += 1;
+			count_b[*digit_b as usize] += 1;
+		}
+		let mut cows = 0;
+		for (c_a, c_b) in count_a.into_iter().zip(count_b.into_iter()) {
+			cows += u8::min(c_a, c_b);
+		}
+		cows -= bulls;
+		(bulls, cows)
+	}
+}
+
+fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item=Number>>
+{
+	if !g.has_repetitions {
+		todo!()
+	} else {
+		Box::new(NumbersWithRepetitions {
+			cur_number: None,
+			number_len: g.number_len,
+			total_digits_number: g.total_digits_number,
+		})
+	}
+}
+
+pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>>
+{
+	if !g.has_repetitions {
+		todo!()
+	} else {
+		Box::new(NumbersWithRepetitions {
+			cur_number: None,
+			number_len: g.number_len,
+			total_digits_number: g.total_digits_number,
+		})
+	}
 }
 
 struct NumbersWithoutRepetitions {
@@ -154,6 +187,16 @@ struct NumbersWithRepetitions {
 	cur_number: Option<Number>,
 	number_len: u8,
 	total_digits_number: u8,
+}
+
+impl Iterator for NumbersWithRepetitions
+{
+	type Item = Number;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		let res = (self as &mut dyn RefIter<Item = Self::Item>).next();
+		res.map(|x|x.clone())
+	}
 }
 
 impl RefIter for NumbersWithRepetitions {
