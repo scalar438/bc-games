@@ -16,7 +16,7 @@ impl Display for Number {
 			}
 		}
 
-		f.write_str(&self.to_string())
+		f.write_str(&s)
 	}
 }
 
@@ -169,7 +169,12 @@ fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 
 pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 	if !g.has_repetitions {
-		todo!()
+		Box::new(NumbersWithoutRepetitions {
+			cur_number: None,
+			used_digits: Vec::new(),
+			number_len: g.number_len,
+			total_digits_number: g.total_digits_number,
+		})
 	} else {
 		Box::new(NumbersWithRepetitions {
 			cur_number: None,
@@ -180,14 +185,67 @@ pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 }
 
 struct NumbersWithoutRepetitions {
-	cur_numbers: Vec<u8>,
+	cur_number: Option<Number>,
+	used_digits: Vec<bool>,
+	number_len: u8,
+	total_digits_number: u8,
 }
 
 impl Iterator for NumbersWithoutRepetitions {
 	type Item = Number;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		todo!()
+		let res = (self as &mut dyn RefIter<Item = Self::Item>).next();
+		res.map(|x| x.clone())
+	}
+}
+
+impl RefIter for NumbersWithoutRepetitions {
+	type Item = Number;
+
+	fn next(&mut self) -> Option<&Self::Item> {
+		match &mut self.cur_number {
+			Some(num) => {
+				if !next_permutation(&mut num.data) {
+					if next_permutation(&mut self.used_digits) {
+						num.data = self
+							.used_digits
+							.iter()
+							.enumerate()
+							.filter_map(|(i, v)| if *v { Some(i as u8) } else { None })
+							.collect();
+					} else {
+						self.cur_number = None;
+					}
+				}
+			}
+
+			None => {
+				self.used_digits = std::iter::repeat(false)
+					.take((self.total_digits_number - self.number_len) as usize)
+					.chain(std::iter::repeat(true).take(self.number_len as usize))
+					.collect();
+
+				debug_assert_eq!(self.used_digits.len() as u8, self.total_digits_number);
+				self.cur_number = Some(Number {
+					data: self
+						.used_digits
+						.iter()
+						.enumerate()
+						.filter_map(|(i, v)| if *v { Some(i as u8) } else { None })
+						.collect(),
+				});
+				dbg!(&self.used_digits);
+				dbg!(&self.cur_number);
+			}
+		}
+
+		let qwe = match &self.cur_number {
+			Some(x) => Some(x),
+			None => None,
+		};
+
+		qwe
 	}
 }
 
@@ -336,6 +394,32 @@ mod test {
 	}
 
 	#[test]
+	fn test_permutation_rep() {
+		{
+			let mut a = [0, 0, 1];
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [0, 1, 0]);
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [1, 0, 0]);
+			assert!(!next_permutation(&mut a));
+		}
+		{
+			let mut a = [0, 0, 1, 1];
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [0, 1, 0, 1]);
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [0, 1, 1, 0]);
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [1, 0, 0, 1]);
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [1, 0, 1, 0]);
+			assert!(next_permutation(&mut a));
+			assert_eq!(a, [1, 1, 0, 0]);
+			assert!(!next_permutation(&mut a));
+		}
+	}
+
+	#[test]
 	fn test_increase_vector() {
 		{
 			let mut a = [5];
@@ -473,5 +557,47 @@ mod test {
 			calc_bc_with_size(&Number::from("1234"), &Number::from("7893"), 10),
 			(0, 1)
 		);
+	}
+
+	#[test]
+	fn test_gen_numbers() {
+		{
+			let g = GameParams::new(1).with_total_digits_number(5);
+			let it = get_numbers_iter(&g);
+			let mut v = Vec::new();
+			for x in it {
+				v.push(x.to_string());
+			}
+			v.sort();
+			assert_eq!(v, ["0", "1", "2", "3", "4"]);
+		}
+
+		{
+			let g = GameParams::new(2).with_total_digits_number(3);
+			let it = get_numbers_iter(&g);
+			let mut v = Vec::new();
+			for x in it {
+				v.push(x.to_string());
+			}
+			v.sort();
+
+			let mut expected = ["01", "10", "21", "12", "20", "02"];
+			expected.sort();
+			assert_eq!(v, expected);
+		}
+
+		{
+			let g = GameParams::new(3).with_total_digits_number(3);
+			let it = get_numbers_iter(&g);
+			let mut v = Vec::new();
+			for x in it {
+				v.push(x.to_string());
+			}
+			v.sort();
+
+			let mut expected = ["012", "021", "102", "120", "210", "201"];
+			expected.sort();
+			assert_eq!(v, expected);
+		}
 	}
 }

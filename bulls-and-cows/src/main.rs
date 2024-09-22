@@ -91,7 +91,7 @@ fn evaluate_strategy_one_thread(
 fn evaluate_strategy(
 	strategy: &mut dyn strategy::Strategy,
 	n: i32,
-	game_params: &game_utils::GameParams
+	game_params: &game_utils::GameParams,
 ) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
