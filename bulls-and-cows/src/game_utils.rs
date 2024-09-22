@@ -38,6 +38,7 @@ where
 	}
 }
 
+#[derive(Clone, Copy)]
 pub struct GameParams {
 	number_len: u8,
 	has_repetitions: bool,
@@ -145,7 +146,7 @@ impl GameParams {
 	}
 
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
-		calc_bc_with_size(a, b, self.base as usize)
+		calc_bc_with_size(a, b, self.base)
 	}
 }
 
@@ -329,8 +330,8 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 	return true;
 }
 
-pub fn calc_bc_with_size(a: &Number, b: &Number, total_digits_number: usize) -> (u8, u8) {
-	let mut count_a = vec![0; total_digits_number];
+pub fn calc_bc_with_size(a: &Number, b: &Number, base: u8) -> (u8, u8) {
+	let mut count_a = vec![0; base as usize];
 	let mut count_b = count_a.clone();
 	let mut bulls: i32 = 0;
 	for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {

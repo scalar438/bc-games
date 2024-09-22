@@ -4,7 +4,7 @@ use std::{
 	sync::{mpsc::channel, Arc, Mutex},
 };
 
-use game_utils::get_numbers_iter;
+use game_utils::Number;
 use strategy::{create_strategy, StrategyType};
 
 mod common;
@@ -23,6 +23,7 @@ struct EvaluationResult {
 fn evaluate_strategy_one_thread(
 	strategy: &mut dyn strategy::Strategy,
 	vals: Arc<Mutex<Vec<String>>>,
+	game: game_utils::GameParams,
 ) -> Result<EvaluationResult, String> {
 	const CHUNK_SIZE: usize = 20;
 
@@ -64,7 +65,7 @@ fn evaluate_strategy_one_thread(
 								"Probably it is an infinite loop. Problem number: {x}"
 							));
 						}
-						let (b, c) = common::calc_bc(guess, &x);
+						let (b, c) = game.calc_bc(&Number::from(guess), &Number::from(&x));
 						strategy.respond_to_guess(b, c);
 					}
 
@@ -91,11 +92,11 @@ fn evaluate_strategy_one_thread(
 
 fn evaluate_strategy(
 	strategy: &mut dyn strategy::Strategy,
-	game_params: &game_utils::GameParams,
+	game: &game_utils::GameParams,
 ) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
-	let vals: Vec<_> = get_numbers_iter(game_params)
+	let vals: Vec<_> = game_utils::get_numbers_iter(game)
 		.map(|x| x.to_string())
 		.collect();
 	let numbers_count = vals.len() as f64;
@@ -113,9 +114,9 @@ fn evaluate_strategy(
 		let sx = sx.clone();
 		let vals = vals.clone();
 		let mut strategy = strategy.clone_strategy();
-
+		let g = game.clone();
 		join_handles.push(std::thread::spawn(move || {
-			let res = evaluate_strategy_one_thread(strategy.as_mut(), vals);
+			let res = evaluate_strategy_one_thread(strategy.as_mut(), vals, g);
 			sx.send(res).unwrap();
 		}));
 	}

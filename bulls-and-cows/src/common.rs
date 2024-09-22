@@ -19,31 +19,6 @@ pub fn calc_bc(guess: &str, hidden: &str) -> (i32, i32) {
 	(bulls, cows)
 }
 
-pub fn gen_values(n: i32) -> Vec<String> {
-	let m = {
-		let mut x = 1;
-		for _ in 0..n {
-			x *= 10;
-		}
-		x
-	};
-	(0..m)
-		.filter_map(|mut x| {
-			let mut s = String::new();
-			let mut hs = [false; 10];
-			for _ in 0..n {
-				if hs[x % 10] {
-					return None;
-				}
-				hs[x % 10] = true;
-				s.push((((x % 10) as u8) + ('0' as u8)) as char);
-				x /= 10;
-			}
-			Some(s)
-		})
-		.collect()
-}
-
 #[test]
 fn test_calc_bc() {
 	assert_eq!(calc_bc("0123", "0432"), (1, 2));

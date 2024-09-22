@@ -16,7 +16,7 @@ pub trait Strategy: Send {
 	// Make a guess. None means responses were inconsistent
 	fn make_guess(&mut self) -> Option<&str>;
 
-	fn respond_to_guess(&mut self, bulls: i32, cows: i32);
+	fn respond_to_guess(&mut self, bulls: u8, cows: u8);
 
 	fn clone_strategy(&self) -> Box<dyn Strategy>;
 }
@@ -48,7 +48,7 @@ where
 	candidates: Vec<String>,
 	is_first: bool,
 	last_guess: String,
-	n: i32,
+	n: u8,
 	func: F,
 }
 
@@ -56,22 +56,24 @@ impl<F: TargetFunc> BasicStrategy<F>
 where
 	F::EvaluationResult: PartialOrd,
 {
-	fn new(n: i32, g: &game_utils::GameParams) -> BasicStrategy<F> {
+	fn new(g: &game_utils::GameParams) -> BasicStrategy<F> {
 		let all_values = get_numbers_iter(&g).map(|x| x.to_string()).collect();
+		let n = g.number_len();
 		BasicStrategy {
 			all_values,
 			candidates: Vec::new(),
 			is_first: false,
 			last_guess: String::new(),
 			n: n + 1,
-			func: F::new(n),
+			func: F::new(n as i32),
 		}
 	}
 
 	fn evaluate_attempt(&self, attempt: &str) -> F::EvaluationResult {
 		let mut v = [0; 25];
+		let attempt = game_utils::Number::from(attempt);
 		for ans in self.candidates.iter() {
-			let bc = common::calc_bc(attempt, ans);
+			let bc = game_utils::calc_bc_with_size(&attempt, &game_utils::Number::from(ans), 10);
 			v[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
 		let v: Vec<_> = v
@@ -131,10 +133,10 @@ where
 		Some(&self.last_guess)
 	}
 
-	fn respond_to_guess(&mut self, bulls: i32, cows: i32) {
+	fn respond_to_guess(&mut self, bulls: u8, cows: u8) {
 		self.candidates.retain(|x| {
 			let bc = common::calc_bc(&self.last_guess, x);
-			bc.0 == bulls && bc.1 == cows
+			bc.0 == bulls as i32 && bc.1 == cows as i32
 		});
 	}
 
@@ -163,14 +165,13 @@ pub enum StrategyType {
 }
 
 pub fn create_strategy(t: StrategyType, g: &game_utils::GameParams) -> Box<dyn Strategy> {
-	let n = g.number_len() as i32;
 	match t {
-		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
-		StrategyType::AmountInformation => Box::new(BasicStrategy::<
-			amount_information::AmountInfFunc,
-		>::new(n, g)),
-		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(n, g)),
-		StrategyType::Landy => Box::new(BasicStrategy::<landy::LandyFunc>::new(n, g)),
-		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(n, g)),
+		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(*g)),
+		StrategyType::AmountInformation => {
+			Box::new(BasicStrategy::<amount_information::AmountInfFunc>::new(g))
+		}
+		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(g)),
+		StrategyType::Landy => Box::new(BasicStrategy::<landy::LandyFunc>::new(g)),
+		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(g)),
 	}
 }
