@@ -1,3 +1,5 @@
+use crate::game_utils::get_numbers_iter;
+
 use super::common;
 use super::game_utils;
 
@@ -54,8 +56,8 @@ impl<F: TargetFunc> BasicStrategy<F>
 where
 	F::EvaluationResult: PartialOrd,
 {
-	fn new(n: i32) -> BasicStrategy<F> {
-		let all_values = common::gen_values(n);
+	fn new(n: i32, g: &game_utils::GameParams) -> BasicStrategy<F> {
+		let all_values = get_numbers_iter(&g).map(|x| x.to_string()).collect();
 		BasicStrategy {
 			all_values,
 			candidates: Vec::new(),
@@ -164,11 +166,11 @@ pub fn create_strategy(t: StrategyType, g: &game_utils::GameParams) -> Box<dyn S
 	let n = g.number_len() as i32;
 	match t {
 		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
-		StrategyType::AmountInformation => {
-			Box::new(BasicStrategy::<amount_information::AmountInfFunc>::new(n))
-		}
-		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(n)),
-		StrategyType::Landy => Box::new(BasicStrategy::<landy::LandyFunc>::new(n)),
-		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(n)),
+		StrategyType::AmountInformation => Box::new(BasicStrategy::<
+			amount_information::AmountInfFunc,
+		>::new(n, g)),
+		StrategyType::MinMax => Box::new(BasicStrategy::<minmax::MinMaxFunc>::new(n, g)),
+		StrategyType::Landy => Box::new(BasicStrategy::<landy::LandyFunc>::new(n, g)),
+		StrategyType::MinAvg => Box::new(BasicStrategy::<min_avg::MinAvgFunc>::new(n, g)),
 	}
 }

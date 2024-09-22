@@ -4,6 +4,7 @@ use std::{
 	sync::{mpsc::channel, Arc, Mutex},
 };
 
+use game_utils::get_numbers_iter;
 use strategy::{create_strategy, StrategyType};
 
 mod common;
@@ -90,12 +91,13 @@ fn evaluate_strategy_one_thread(
 
 fn evaluate_strategy(
 	strategy: &mut dyn strategy::Strategy,
-	n: i32,
 	game_params: &game_utils::GameParams,
 ) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
-	let vals = common::gen_values(n);
+	let vals: Vec<_> = get_numbers_iter(game_params)
+		.map(|x| x.to_string())
+		.collect();
 	let numbers_count = vals.len() as f64;
 
 	let vals = Mutex::new(vals);
@@ -177,7 +179,7 @@ fn main() {
 		] {
 			let mut s = create_strategy(st, &g);
 
-			match evaluate_strategy(s.as_mut(), g.number_len() as i32, &g) {
+			match evaluate_strategy(s.as_mut(), &g) {
 				Ok(res) => {
 					println!("Strategy type: {:?}, check successfull. Results", st);
 					println!(

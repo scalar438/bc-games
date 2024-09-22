@@ -11,7 +11,7 @@ impl Display for Number {
 		for b in self.data.iter() {
 			match b {
 				0..=9 => s.push((b + ('0' as u8)) as char),
-				10..MAX_DIGITS_SET_SIZE => s.push((b - 10 + ('A' as u8)) as char),
+				10..MAX_BASE => s.push((b - 10 + ('A' as u8)) as char),
 				_ => unreachable!(),
 			}
 		}
@@ -38,29 +38,23 @@ where
 	}
 }
 
-pub trait RefIter {
-	type Item;
-
-	fn next(&mut self) -> Option<&Self::Item>;
-}
-
 pub struct GameParams {
 	number_len: u8,
 	has_repetitions: bool,
-	total_digits_number: u8,
+	base: u8,
 }
 
-const MAX_DIGITS_SET_SIZE: u8 = 36;
+const MAX_BASE: u8 = 36;
 
 impl GameParams {
 	pub fn new(number_len: u8) -> Self {
-		if number_len > MAX_DIGITS_SET_SIZE {
+		if number_len > MAX_BASE {
 			panic!("number_len is too large");
 		}
 		Self {
 			number_len,
 			has_repetitions: false,
-			total_digits_number: 10,
+			base: 10,
 		}
 	}
 
@@ -73,17 +67,17 @@ impl GameParams {
 		self
 	}
 
-	pub fn with_total_digits_number(mut self, ds: u8) -> Self {
-		if ds > MAX_DIGITS_SET_SIZE {
-			panic!("Number of digits can't be more than {MAX_DIGITS_SET_SIZE}");
+	pub fn with_base(mut self, base: u8) -> Self {
+		if base > MAX_BASE {
+			panic!("Number of digits can't be more than {MAX_BASE}");
 		}
-		self.total_digits_number = ds;
+		self.base = base;
 		self
 	}
 
 	pub fn to_number_checked(&self, s: &str) -> Option<Number> {
 		let mut res = Vec::new();
-		let mut digit_presented = vec![false; MAX_DIGITS_SET_SIZE as usize];
+		let mut digit_presented = vec![false; MAX_BASE as usize];
 		for c in s.chars() {
 			match self.to_u8(c) {
 				Ok(v) => {
@@ -107,7 +101,7 @@ impl GameParams {
 
 	fn to_string_checked(&self, num: &Number) -> Option<String> {
 		let mut res = String::new();
-		let mut digit_presented = vec![false; MAX_DIGITS_SET_SIZE as usize];
+		let mut digit_presented = vec![false; MAX_BASE as usize];
 
 		if num.data.len() as u8 != self.number_len {
 			return None;
@@ -127,12 +121,12 @@ impl GameParams {
 	}
 
 	fn to_char(&self, b: u8) -> Result<char, String> {
-		if b >= self.total_digits_number {
+		if b >= self.base {
 			return Err(format!("value {b} is too large"));
 		}
 		match b {
 			0..=9 => Ok((b + ('0' as u8)) as char),
-			10..=MAX_DIGITS_SET_SIZE => Ok((b - 10 + ('A' as u8)) as char),
+			10..=MAX_BASE => Ok((b - 10 + ('A' as u8)) as char),
 			_ => unreachable!(),
 		}
 	}
@@ -143,7 +137,7 @@ impl GameParams {
 			'A'..='Z' => ((c as u8) - ('A' as u8) + 10) as u8,
 			_ => return Err(format!("Char {c} isn't in valid range")),
 		};
-		if v >= self.total_digits_number {
+		if v >= self.base {
 			Err(format!("Char {c} represents too large digit"))
 		} else {
 			Ok(v)
@@ -151,18 +145,23 @@ impl GameParams {
 	}
 
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
-		calc_bc_with_size(a, b, self.total_digits_number as usize)
+		calc_bc_with_size(a, b, self.base as usize)
 	}
 }
 
 fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 	if !g.has_repetitions {
-		todo!()
+		Box::new(NumbersWithoutRepetitions {
+			cur_number: None,
+			used_digits: Vec::new(),
+			number_len: g.number_len,
+			total_digits_number: g.base,
+		})
 	} else {
 		Box::new(NumbersWithRepetitions {
 			cur_number: None,
 			number_len: g.number_len,
-			total_digits_number: g.total_digits_number,
+			total_digits_number: g.base,
 		})
 	}
 }
@@ -173,15 +172,21 @@ pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 			cur_number: None,
 			used_digits: Vec::new(),
 			number_len: g.number_len,
-			total_digits_number: g.total_digits_number,
+			total_digits_number: g.base,
 		})
 	} else {
 		Box::new(NumbersWithRepetitions {
 			cur_number: None,
 			number_len: g.number_len,
-			total_digits_number: g.total_digits_number,
+			total_digits_number: g.base,
 		})
 	}
+}
+
+pub trait RefIter {
+	type Item;
+
+	fn next(&mut self) -> Option<&Self::Item>;
 }
 
 struct NumbersWithoutRepetitions {
@@ -235,17 +240,13 @@ impl RefIter for NumbersWithoutRepetitions {
 						.filter_map(|(i, v)| if *v { Some(i as u8) } else { None })
 						.collect(),
 				});
-				dbg!(&self.used_digits);
-				dbg!(&self.cur_number);
 			}
 		}
 
-		let qwe = match &self.cur_number {
+		match &self.cur_number {
 			Some(x) => Some(x),
 			None => None,
-		};
-
-		qwe
+		}
 	}
 }
 
@@ -440,7 +441,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_6() {
-		let g = GameParams::new(5).with_total_digits_number(6);
+		let g = GameParams::new(5).with_base(6);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert!(g.to_char(6).is_err());
@@ -450,7 +451,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_10() {
-		let g = GameParams::new(5).with_total_digits_number(10);
+		let g = GameParams::new(5).with_base(10);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -461,7 +462,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_17() {
-		let g = GameParams::new(5).with_total_digits_number(17);
+		let g = GameParams::new(5).with_base(17);
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -474,7 +475,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_6() {
-		let g = GameParams::new(2).with_total_digits_number(6);
+		let g = GameParams::new(2).with_base(6);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert!(g.to_u8('6').is_err());
@@ -484,7 +485,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_10() {
-		let g = GameParams::new(2).with_total_digits_number(10);
+		let g = GameParams::new(2).with_base(10);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
@@ -495,7 +496,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_13() {
-		let g = GameParams::new(2).with_total_digits_number(13);
+		let g = GameParams::new(2).with_base(13);
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
@@ -562,7 +563,7 @@ mod test {
 	#[test]
 	fn test_gen_numbers() {
 		{
-			let g = GameParams::new(1).with_total_digits_number(5);
+			let g = GameParams::new(1).with_base(5);
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -573,7 +574,7 @@ mod test {
 		}
 
 		{
-			let g = GameParams::new(2).with_total_digits_number(3);
+			let g = GameParams::new(2).with_base(3);
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -587,7 +588,7 @@ mod test {
 		}
 
 		{
-			let g = GameParams::new(3).with_total_digits_number(3);
+			let g = GameParams::new(3).with_base(3);
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
