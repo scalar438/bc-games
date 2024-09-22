@@ -15,7 +15,26 @@ impl Display for Number {
 				_ => unreachable!(),
 			}
 		}
-		f.write_str(&s)
+
+		f.write_str(&self.to_string())
+	}
+}
+
+impl<T> From<T> for Number
+where
+	T: AsRef<str>,
+{
+	fn from(value: T) -> Self {
+		let data: Vec<_> = value
+			.as_ref()
+			.chars()
+			.map(|c| match c {
+				'0'..='9' => (c as u8) - ('0' as u8),
+				'A'..='Z' => (c as u8) - 10 - ('A' as u8),
+				_ => panic!("Unknown character"),
+			})
+			.collect();
+		Self { data }
 	}
 }
 
@@ -62,7 +81,7 @@ impl GameParams {
 		self
 	}
 
-	fn to_byte_vec_value(&self, s: &str) -> Option<Number> {
+	pub fn to_number_checked(&self, s: &str) -> Option<Number> {
 		let mut res = Vec::new();
 		let mut digit_presented = vec![false; MAX_DIGITS_SET_SIZE as usize];
 		for c in s.chars() {
@@ -79,14 +98,20 @@ impl GameParams {
 				Err(_) => return None,
 			}
 		}
-
-		Some(Number { data: res })
+		if res.len() as u8 != self.number_len {
+			None
+		} else {
+			Some(Number { data: res })
+		}
 	}
 
-	fn to_string_value(&self, num: &Number) -> Option<String> {
+	fn to_string_checked(&self, num: &Number) -> Option<String> {
 		let mut res = String::new();
 		let mut digit_presented = vec![false; MAX_DIGITS_SET_SIZE as usize];
 
+		if num.data.len() as u8 != self.number_len {
+			return None;
+		}
 		for b in num.data.iter() {
 			if !self.has_repetitions && digit_presented[*b as usize] {
 				return None;
@@ -126,27 +151,11 @@ impl GameParams {
 	}
 
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
-		let mut count_a = vec![0; self.total_digits_number as usize];
-		let mut count_b = count_a.clone();
-		let mut bulls = 0;
-		for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
-			if *a == *b {
-				bulls += 1;
-			}
-			count_a[*digit_a as usize] += 1;
-			count_b[*digit_b as usize] += 1;
-		}
-		let mut cows = 0;
-		for (c_a, c_b) in count_a.into_iter().zip(count_b.into_iter()) {
-			cows += u8::min(c_a, c_b);
-		}
-		cows -= bulls;
-		(bulls, cows)
+		calc_bc_with_size(a, b, self.total_digits_number as usize)
 	}
 }
 
-fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item=Number>>
-{
+fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 	if !g.has_repetitions {
 		todo!()
 	} else {
@@ -158,8 +167,7 @@ fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item=Number>>
 	}
 }
 
-pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>>
-{
+pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 	if !g.has_repetitions {
 		todo!()
 	} else {
@@ -189,13 +197,12 @@ struct NumbersWithRepetitions {
 	total_digits_number: u8,
 }
 
-impl Iterator for NumbersWithRepetitions
-{
+impl Iterator for NumbersWithRepetitions {
 	type Item = Number;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let res = (self as &mut dyn RefIter<Item = Self::Item>).next();
-		res.map(|x|x.clone())
+		res.map(|x| x.clone())
 	}
 }
 
@@ -261,6 +268,24 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 		}
 	}
 	return true;
+}
+
+pub fn calc_bc_with_size(a: &Number, b: &Number, total_digits_number: usize) -> (u8, u8) {
+	let mut count_a = vec![0; total_digits_number];
+	let mut count_b = count_a.clone();
+	let mut bulls: i32 = 0;
+	for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
+		if *digit_a == *digit_b {
+			bulls += 1;
+		}
+		count_a[*digit_a as usize] += 1;
+		count_b[*digit_b as usize] += 1;
+	}
+	let mut cows: i32 = -bulls;
+	for (c_a, c_b) in count_a.into_iter().zip(count_b.into_iter()) {
+		cows += i32::min(c_a, c_b);
+	}
+	(bulls as u8, cows as u8)
 }
 
 #[cfg(test)]
@@ -407,22 +432,46 @@ mod test {
 	fn test_to_string_value() {
 		let g = GameParams::new(4);
 		assert_eq!(
-			g.to_string_value(&gen_number(&[6, 7, 4, 0])).unwrap(),
+			g.to_string_checked(&gen_number(&[6, 7, 4, 0])).unwrap(),
 			"6740"
 		);
 
-		assert!(g.to_string_value(&gen_number(&[7, 7, 4, 0])).is_none());
-		assert!(g.to_string_value(&gen_number(&[7, 10, 4, 0])).is_none());
+		assert!(g.to_string_checked(&gen_number(&[7, 7, 4, 0])).is_none());
+		assert!(g.to_string_checked(&gen_number(&[7, 10, 4, 0])).is_none());
 
 		let g = g.with_repetitions(true);
 		assert_eq!(
-			g.to_string_value(&gen_number(&[6, 7, 4, 0])).unwrap(),
+			g.to_string_checked(&gen_number(&[6, 7, 4, 0])).unwrap(),
 			"6740"
 		);
 		assert_eq!(
-			g.to_string_value(&gen_number(&[7, 7, 4, 0])).unwrap(),
+			g.to_string_checked(&gen_number(&[7, 7, 4, 0])).unwrap(),
 			"7740"
 		);
-		assert!(g.to_string_value(&gen_number(&[7, 10, 4, 0])).is_none());
+		assert!(g.to_string_checked(&gen_number(&[7, 10, 4, 0])).is_none());
+	}
+
+	#[test]
+	fn test_calc_bc() {
+		assert_eq!(
+			calc_bc_with_size(&Number::from("0123"), &Number::from("0432"), 5),
+			(1, 2)
+		);
+		assert_eq!(
+			calc_bc_with_size(&Number::from("1234"), &Number::from("5678"), 10),
+			(0, 0)
+		);
+		assert_eq!(
+			calc_bc_with_size(&Number::from("12304"), &Number::from("43210"), 10),
+			(0, 5)
+		);
+		assert_eq!(
+			calc_bc_with_size(&Number::from("123456"), &Number::from("123456"), 10),
+			(6, 0)
+		);
+		assert_eq!(
+			calc_bc_with_size(&Number::from("1234"), &Number::from("7893"), 10),
+			(0, 1)
+		);
 	}
 }

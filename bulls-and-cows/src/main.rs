@@ -7,7 +7,7 @@ use std::{
 use strategy::{create_strategy, StrategyType};
 
 mod common;
-mod game_params;
+mod game_utils;
 mod strategy;
 
 #[derive(Debug, Default)]
@@ -91,6 +91,7 @@ fn evaluate_strategy_one_thread(
 fn evaluate_strategy(
 	strategy: &mut dyn strategy::Strategy,
 	n: i32,
+	game_params: &game_utils::GameParams
 ) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
@@ -164,7 +165,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 fn main() {
 	const N: u8 = 4;
 
-	let g = game_params::GameParams::new(N as u8);
+	let g = game_utils::GameParams::new(N as u8);
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
@@ -176,7 +177,7 @@ fn main() {
 		] {
 			let mut s = create_strategy(st, &g);
 
-			match evaluate_strategy(s.as_mut(), g.number_len() as i32) {
+			match evaluate_strategy(s.as_mut(), g.number_len() as i32, &g) {
 				Ok(res) => {
 					println!("Strategy type: {:?}, check successfull. Results", st);
 					println!(

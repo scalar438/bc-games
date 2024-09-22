@@ -1,5 +1,5 @@
 use super::common;
-use super::game_params;
+use super::game_utils;
 
 mod amount_information;
 mod landy;
@@ -160,7 +160,7 @@ pub enum StrategyType {
 	MinAvg,
 }
 
-pub fn create_strategy(t: StrategyType, g: &game_params::GameParams) -> Box<dyn Strategy> {
+pub fn create_strategy(t: StrategyType, g: &game_utils::GameParams) -> Box<dyn Strategy> {
 	let n = g.number_len() as i32;
 	match t {
 		StrategyType::Naive => Box::new(naive::NaiveStrategy::new(n)),
