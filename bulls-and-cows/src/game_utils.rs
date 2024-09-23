@@ -544,6 +544,10 @@ mod test {
 			(1, 2)
 		);
 		assert_eq!(
+			calc_bc_with_base(&Number::from("0312"), &Number::from("0123"), 5),
+			(1, 3)
+		);
+		assert_eq!(
 			calc_bc_with_base(&Number::from("1234"), &Number::from("5678"), 10),
 			(0, 0)
 		);

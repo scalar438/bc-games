@@ -199,7 +199,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::MinMax, &g);
+		let mut s = create_strategy(StrategyType::Naive, &g);
 
 		one_game(s.as_mut());
 	}
