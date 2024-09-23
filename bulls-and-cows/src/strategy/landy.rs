@@ -23,13 +23,7 @@ impl TargetFunc for LandyFunc {
 	fn evaluate_distribution(&self, distribution: &[i32], _: i32) -> Self::EvaluationResult {
 		distribution
 			.iter()
-			.filter_map(|x| {
-				if *x != 0 {
-					Some(self.inv_values[*x as usize] * (*x as f64))
-				} else {
-					None
-				}
-			})
+			.map(|x| self.inv_values[*x as usize] * (*x as f64))
 			.sum()
 	}
 

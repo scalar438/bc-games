@@ -32,6 +32,7 @@ trait TargetFunc: Clone + Send {
 		current_candidates: i32,
 	) -> Self::EvaluationResult;
 
+	// The value of the type EvaluationResult which is bigger than any of returned by evaluate_distribution
 	fn get_initial_value(&mut self) -> Self::EvaluationResult;
 }
 
@@ -44,8 +45,8 @@ struct BasicStrategy<F: TargetFunc>
 where
 	F::EvaluationResult: PartialOrd,
 {
-	all_values: Vec<String>,
-	candidates: Vec<String>,
+	all_values: Vec<Number>,
+	candidates: Vec<Number>,
 	is_first: bool,
 	last_guess: Number,
 	n: u8,
@@ -57,7 +58,7 @@ where
 	F::EvaluationResult: PartialOrd,
 {
 	fn new(g: &game_utils::GameParams) -> BasicStrategy<F> {
-		let all_values = get_numbers_iter(&g).map(|x| x.to_string()).collect();
+		let all_values: Vec<_> = get_numbers_iter(&g).collect();
 		let n = g.number_len();
 		BasicStrategy {
 			all_values,
@@ -69,11 +70,10 @@ where
 		}
 	}
 
-	fn evaluate_attempt(&self, attempt: &str) -> F::EvaluationResult {
+	fn evaluate_attempt(&self, attempt: &Number) -> F::EvaluationResult {
 		let mut v = [0; 25];
-		let attempt = game_utils::Number::from(attempt);
 		for ans in self.candidates.iter() {
-			let bc = game_utils::calc_bc_with_base(&attempt, &game_utils::Number::from(ans), 10);
+			let bc = game_utils::calc_bc_with_base(&attempt, &ans, 10);
 			v[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
 		let v: Vec<_> = v
@@ -97,11 +97,11 @@ where
 	fn make_guess(&mut self) -> Option<&Number> {
 		if self.is_first {
 			self.is_first = false;
-			self.last_guess = Number::from(self.candidates[0].clone())
+			self.last_guess = self.candidates[0].clone()
 		} else {
 			match self.candidates.len() {
 				0 => return None,
-				1 => self.last_guess = Number::from(self.candidates[0].clone()),
+				1 => self.last_guess = self.candidates[0].clone(),
 				_ => {
 					let mut min_value = self.func.get_initial_value();
 					let mut res = &self.all_values[0];
@@ -126,7 +126,7 @@ where
 						}
 					}
 
-					self.last_guess = Number::from(res.clone());
+					self.last_guess = res.clone();
 				}
 			}
 		}
@@ -135,7 +135,7 @@ where
 
 	fn respond_to_guess(&mut self, bulls: u8, cows: u8) {
 		self.candidates.retain(|x| {
-			let bc = game_utils::calc_bc_with_base(&self.last_guess, &Number::from(x), 10);
+			let bc = game_utils::calc_bc_with_base(&self.last_guess, &x, 10);
 			bc.0 == bulls && bc.1 == cows
 		});
 	}

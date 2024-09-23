@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Default)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Default, Hash)]
 pub struct Number {
 	data: Vec<u8>,
 }

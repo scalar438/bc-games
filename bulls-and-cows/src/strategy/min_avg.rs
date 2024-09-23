@@ -13,13 +13,9 @@ impl TargetFunc for MinAvgFunc {
 	fn evaluate_distribution(&self, distribution: &[i32], _: i32) -> Self::EvaluationResult {
 		distribution
 			.iter()
-			.filter_map(|x| {
-				if *x != 0 {
-					let x = *x as u64;
-					Some(x * x)
-				} else {
-					None
-				}
+			.map(|x| {
+				let x = *x as u64;
+				x * x
 			})
 			.sum()
 	}

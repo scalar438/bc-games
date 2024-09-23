@@ -15,20 +15,20 @@ struct EvaluationResult {
 	total: i32,
 	worst_guess_count: i32,
 	avg: f64,
-	worst_number: String,
+	worst_number: Number,
 	time: std::time::Duration,
 }
 
 fn evaluate_strategy_one_thread(
 	strategy: &mut dyn strategy::Strategy,
-	vals: Arc<Mutex<Vec<String>>>,
+	vals: Arc<Mutex<Vec<Number>>>,
 	game: game_utils::GameParams,
 ) -> Result<EvaluationResult, String> {
 	const CHUNK_SIZE: usize = 20;
 
 	let mut total = 0;
 	let mut worst_guess_count = 0;
-	let mut worst_number = String::new();
+	let mut worst_number = Number::default();
 
 	loop {
 		let cur_values;
@@ -55,7 +55,7 @@ fn evaluate_strategy_one_thread(
 
 				match guess {
 					Some(guess) => {
-						if guess.to_string() == x {
+						if guess == &x {
 							break;
 						}
 						counter += 1;
@@ -64,7 +64,7 @@ fn evaluate_strategy_one_thread(
 								"Probably it is an infinite loop. Problem number: {x}"
 							));
 						}
-						let (b, c) = game.calc_bc(guess, &Number::from(&x));
+						let (b, c) = game.calc_bc(guess, &x);
 						strategy.respond_to_guess(b, c);
 					}
 
@@ -95,9 +95,7 @@ fn evaluate_strategy(
 ) -> Result<EvaluationResult, String> {
 	let start_time = std::time::Instant::now();
 
-	let vals: Vec<_> = game_utils::get_numbers_iter(game)
-		.map(|x| x.to_string())
-		.collect();
+	let vals: Vec<_> = game_utils::get_numbers_iter(game).collect();
 	let numbers_count = vals.len() as f64;
 
 	let vals = Mutex::new(vals);

@@ -19,13 +19,9 @@ impl TargetFunc for AmountInfFunc {
 
 		distribution
 			.iter()
-			.filter_map(|x| {
-				if *x != 0 {
-					let p = (*x as f64) / s;
-					Some(p * f64::ln(p))
-				} else {
-					None
-				}
+			.map(|x| {
+				let p = (*x as f64) / s;
+				p * f64::ln(p)
 			})
 			.sum()
 	}
