@@ -146,7 +146,7 @@ impl GameParams {
 	}
 
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
-		calc_bc_with_size(a, b, self.base)
+		calc_bc_with_base(a, b, self.base)
 	}
 }
 
@@ -330,7 +330,7 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 	return true;
 }
 
-pub fn calc_bc_with_size(a: &Number, b: &Number, base: u8) -> (u8, u8) {
+pub fn calc_bc_with_base(a: &Number, b: &Number, base: u8) -> (u8, u8) {
 	let mut count_a = [0; MAX_BASE as usize];
 	let mut count_b = [0; MAX_BASE as usize];
 	let mut bulls: i32 = 0;
@@ -540,23 +540,23 @@ mod test {
 	#[test]
 	fn test_calc_bc() {
 		assert_eq!(
-			calc_bc_with_size(&Number::from("0123"), &Number::from("0432"), 5),
+			calc_bc_with_base(&Number::from("0123"), &Number::from("0432"), 5),
 			(1, 2)
 		);
 		assert_eq!(
-			calc_bc_with_size(&Number::from("1234"), &Number::from("5678"), 10),
+			calc_bc_with_base(&Number::from("1234"), &Number::from("5678"), 10),
 			(0, 0)
 		);
 		assert_eq!(
-			calc_bc_with_size(&Number::from("12304"), &Number::from("43210"), 10),
+			calc_bc_with_base(&Number::from("12304"), &Number::from("43210"), 10),
 			(0, 5)
 		);
 		assert_eq!(
-			calc_bc_with_size(&Number::from("123456"), &Number::from("123456"), 10),
+			calc_bc_with_base(&Number::from("123456"), &Number::from("123456"), 10),
 			(6, 0)
 		);
 		assert_eq!(
-			calc_bc_with_size(&Number::from("1234"), &Number::from("7893"), 10),
+			calc_bc_with_base(&Number::from("1234"), &Number::from("7893"), 10),
 			(0, 1)
 		);
 	}

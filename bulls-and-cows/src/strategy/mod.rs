@@ -1,7 +1,7 @@
 use crate::game_utils::get_numbers_iter;
 
-use super::common;
 use super::game_utils;
+use super::game_utils::Number;
 
 mod amount_information;
 mod landy;
@@ -14,7 +14,7 @@ pub trait Strategy: Send {
 	fn init(&mut self);
 
 	// Make a guess. None means responses were inconsistent
-	fn make_guess(&mut self) -> Option<&str>;
+	fn make_guess(&mut self) -> Option<&Number>;
 
 	fn respond_to_guess(&mut self, bulls: u8, cows: u8);
 
@@ -47,7 +47,7 @@ where
 	all_values: Vec<String>,
 	candidates: Vec<String>,
 	is_first: bool,
-	last_guess: String,
+	last_guess: Number,
 	n: u8,
 	func: F,
 }
@@ -63,7 +63,7 @@ where
 			all_values,
 			candidates: Vec::new(),
 			is_first: false,
-			last_guess: String::new(),
+			last_guess: Number::default(),
 			n: n + 1,
 			func: F::new(n as i32),
 		}
@@ -73,7 +73,7 @@ where
 		let mut v = [0; 25];
 		let attempt = game_utils::Number::from(attempt);
 		for ans in self.candidates.iter() {
-			let bc = game_utils::calc_bc_with_size(&attempt, &game_utils::Number::from(ans), 10);
+			let bc = game_utils::calc_bc_with_base(&attempt, &game_utils::Number::from(ans), 10);
 			v[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
 		let v: Vec<_> = v
@@ -94,14 +94,14 @@ where
 		self.candidates = self.all_values.clone();
 	}
 
-	fn make_guess(&mut self) -> Option<&str> {
+	fn make_guess(&mut self) -> Option<&Number> {
 		if self.is_first {
 			self.is_first = false;
-			self.last_guess = self.candidates[0].clone();
+			self.last_guess = Number::from(self.candidates[0].clone())
 		} else {
 			match self.candidates.len() {
 				0 => return None,
-				1 => self.last_guess = self.candidates[0].clone(),
+				1 => self.last_guess = Number::from(self.candidates[0].clone()),
 				_ => {
 					let mut min_value = self.func.get_initial_value();
 					let mut res = &self.all_values[0];
@@ -126,7 +126,7 @@ where
 						}
 					}
 
-					self.last_guess = res.clone();
+					self.last_guess = Number::from(res.clone());
 				}
 			}
 		}
@@ -135,8 +135,8 @@ where
 
 	fn respond_to_guess(&mut self, bulls: u8, cows: u8) {
 		self.candidates.retain(|x| {
-			let bc = common::calc_bc(&self.last_guess, x);
-			bc.0 == bulls as i32 && bc.1 == cows as i32
+			let bc = game_utils::calc_bc_with_base(&self.last_guess, &Number::from(x), 10);
+			bc.0 == bulls && bc.1 == cows
 		});
 	}
 

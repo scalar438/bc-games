@@ -7,7 +7,6 @@ use std::{
 use game_utils::Number;
 use strategy::{create_strategy, StrategyType};
 
-mod common;
 mod game_utils;
 mod strategy;
 
@@ -56,7 +55,7 @@ fn evaluate_strategy_one_thread(
 
 				match guess {
 					Some(guess) => {
-						if guess == x {
+						if guess.to_string() == x {
 							break;
 						}
 						counter += 1;
@@ -65,7 +64,7 @@ fn evaluate_strategy_one_thread(
 								"Probably it is an infinite loop. Problem number: {x}"
 							));
 						}
-						let (b, c) = game.calc_bc(&Number::from(guess), &Number::from(&x));
+						let (b, c) = game.calc_bc(guess, &Number::from(&x));
 						strategy.respond_to_guess(b, c);
 					}
 

@@ -31,14 +31,8 @@ impl Strategy for NaiveStrategy {
 		self.candidates = self.all_values.clone();
 	}
 
-	fn make_guess(&mut self) -> Option<&str> {
-		if let Some(guess) = self.candidates.first() {
-			self.last_guess = guess.clone();
-			self.last_guess_str = self.last_guess.to_string();
-			Some(self.last_guess_str.as_str())
-		} else {
-			None
-		}
+	fn make_guess(&mut self) -> Option<&Number> {
+		self.candidates.first()
 	}
 
 	fn respond_to_guess(&mut self, bulls: u8, cows: u8) {
