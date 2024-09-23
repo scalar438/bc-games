@@ -331,8 +331,8 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 }
 
 pub fn calc_bc_with_size(a: &Number, b: &Number, base: u8) -> (u8, u8) {
-	let mut count_a = vec![0; base as usize];
-	let mut count_b = count_a.clone();
+	let mut count_a = [0; MAX_BASE as usize];
+	let mut count_b = [0; MAX_BASE as usize];
 	let mut bulls: i32 = 0;
 	for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
 		if *digit_a == *digit_b {
@@ -342,8 +342,8 @@ pub fn calc_bc_with_size(a: &Number, b: &Number, base: u8) -> (u8, u8) {
 		count_b[*digit_b as usize] += 1;
 	}
 	let mut cows: i32 = -bulls;
-	for (c_a, c_b) in count_a.into_iter().zip(count_b.into_iter()) {
-		cows += i32::min(c_a, c_b);
+	for (c_a, c_b) in count_a.iter().take(base as usize).zip(count_b.iter()) {
+		cows += i32::min(*c_a, *c_b);
 	}
 	(bulls as u8, cows as u8)
 }
