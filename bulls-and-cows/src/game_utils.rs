@@ -43,7 +43,7 @@ where
 
 #[derive(Clone, Copy)]
 pub struct GameParams {
-	number_len: u8,
+	pub number_len: u8,
 	has_repetitions: bool,
 	base: u8,
 }
@@ -148,6 +148,7 @@ impl GameParams {
 		}
 	}
 
+	// Return (number_of_bulls, number_of_cows)
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
 		calc_bc_with_base(a, b, self.base)
 	}

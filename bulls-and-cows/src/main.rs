@@ -1,3 +1,6 @@
+mod game_utils;
+mod strategy;
+
 use std::{
 	mem,
 	num::NonZero,
@@ -6,9 +9,6 @@ use std::{
 
 use game_utils::Number;
 use strategy::{create_strategy, StrategyType};
-
-mod game_utils;
-mod strategy;
 
 #[derive(Debug, Default)]
 struct EvaluationResult {
@@ -162,6 +162,33 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 	}
 }
 
+// Run the strategy to guess the given hidden number, print the all steps
+fn solve_for_one_number(
+	a: &mut dyn strategy::Strategy,
+	hidden_number: Number,
+	g: &game_utils::GameParams,
+) {
+	a.init();
+	let mut counter = 1;
+	loop {
+		if let Some(guess) = a.make_guess() {
+			let (bulls, cows) = g.calc_bc(guess, &hidden_number);
+			println!(
+				"Guess #{:?}: {:}, answer is {:} bulls, {:} cows",
+				counter, guess, bulls, cows
+			);
+			if bulls == g.number_len {
+				break;
+			}
+			a.respond_to_guess(bulls, cows);
+		} else {
+			println!("Answers are inconsistent. Something wrong with the strategy");
+			break;
+		}
+		counter += 1;
+	}
+}
+
 fn main() {
 	const N: u8 = 4;
 
@@ -194,6 +221,23 @@ fn main() {
 					"Strategy type: {:?} isn't able to solve the puzzle. Error message: {:}",
 					st, s
 				),
+			}
+		}
+	} else if std::env::args().position(|x| x == "--one_game").is_some() {
+		match std::env::args().position(|x| x == "-n") {
+			Some(p) => {
+				if let Some(p_n) = std::env::args().nth(p + 1) {
+					solve_for_one_number(
+						&mut *create_strategy(StrategyType::AmountInformation, &g),
+						Number::from(p_n),
+						&g,
+					);
+				} else {
+					println!("There is no required -n argument");
+				}
+			}
+			None => {
+				println!("There is no required -n argument");
 			}
 		}
 	} else {
