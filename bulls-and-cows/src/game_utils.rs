@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter};
+use std::{
+	fmt::{Display, Formatter},
+	mem::{self, MaybeUninit},
+};
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Default, Hash)]
 pub struct Number {
@@ -331,8 +334,22 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 }
 
 pub fn calc_bc_with_base(a: &Number, b: &Number, base: u8) -> (u8, u8) {
-	let mut count_a = [0; MAX_BASE as usize];
-	let mut count_b = [0; MAX_BASE as usize];
+	let mut count_a = {
+		let mut t: [MaybeUninit<i32>; MAX_BASE as usize] =
+			unsafe { MaybeUninit::uninit().assume_init() };
+		for v in t[0..base as usize].iter_mut() {
+			*v = MaybeUninit::new(0);
+		}
+		unsafe { mem::transmute::<_, [i32; MAX_BASE as usize]>(t) }
+	};
+	let mut count_b = {
+		let mut t: [MaybeUninit<i32>; MAX_BASE as usize] =
+			unsafe { MaybeUninit::uninit().assume_init() };
+		for v in t[0..base as usize].iter_mut() {
+			*v = MaybeUninit::new(0);
+		}
+		unsafe { mem::transmute::<_, [i32; MAX_BASE as usize]>(t) }
+	};
 	let mut bulls: i32 = 0;
 	for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
 		if *digit_a == *digit_b {
