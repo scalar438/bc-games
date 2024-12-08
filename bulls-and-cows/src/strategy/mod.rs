@@ -50,7 +50,7 @@ where
 	is_first: bool,
 	last_guess: Number,
 	n: u8,
-	func: F,
+	target_func: F,
 }
 
 impl<F: TargetFunc> BasicStrategy<F>
@@ -66,7 +66,7 @@ where
 			is_first: false,
 			last_guess: Number::default(),
 			n: n + 1,
-			func: F::new(n as i32),
+			target_func: F::new(n as i32),
 		}
 	}
 
@@ -80,7 +80,7 @@ where
 			.iter()
 			.filter_map(|x| if *x != 0 { Some(*x) } else { None })
 			.collect();
-		self.func
+		self.target_func
 			.evaluate_distribution(&v[..], self.candidates.len() as i32)
 	}
 }
@@ -103,7 +103,7 @@ where
 				0 => return None,
 				1 => self.last_guess = self.candidates[0].clone(),
 				_ => {
-					let mut min_value = self.func.get_initial_value();
+					let mut min_value = self.target_func.get_initial_value();
 					let mut res = &self.all_values[0];
 
 					let mut hs = std::collections::HashSet::new();
