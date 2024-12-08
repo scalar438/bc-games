@@ -160,7 +160,7 @@ pub enum StrategyType {
 	// Strategy that uses Landy's formula for picking an attempt
 	Landy,
 
-	// Strategy that tries to minimize the average candidates count on the next step
+	// Strategy that tries to minimize the average candidates left on the next step
 	MinAvg,
 }
 
