@@ -8,6 +8,12 @@ pub struct Number {
 	data: Vec<u8>,
 }
 
+impl Number {
+	pub fn empty() -> Number {
+		Number { data: Vec::new() }
+	}
+}
+
 impl Display for Number {
 	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
 		let mut s = String::new();
@@ -154,7 +160,7 @@ impl GameParams {
 	}
 }
 
-fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
+pub fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 	if !g.has_repetitions {
 		Box::new(NumbersWithoutRepetitions {
 			cur_number: None,
@@ -172,6 +178,7 @@ fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 }
 
 pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
+	// TODO: implement this using get_numbers_iter_ref
 	if !g.has_repetitions {
 		Box::new(NumbersWithoutRepetitions {
 			cur_number: None,
@@ -188,12 +195,21 @@ pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 	}
 }
 
-pub trait RefIter {
+pub trait RefIter: Send {
 	type Item;
 
 	fn next(&mut self) -> Option<&Self::Item>;
+
+	fn clone_dyn(&self) -> Box<dyn RefIter<Item = Self::Item>>;
 }
 
+impl Clone for Box<dyn RefIter<Item = Number>> {
+	fn clone(&self) -> Self {
+		self.clone_dyn()
+	}
+}
+
+#[derive(Clone)]
 struct NumbersWithoutRepetitions {
 	cur_number: Option<Number>,
 	used_digits: Vec<bool>,
@@ -253,8 +269,13 @@ impl RefIter for NumbersWithoutRepetitions {
 			None => None,
 		}
 	}
+
+	fn clone_dyn(&self) -> Box<dyn RefIter<Item = Self::Item>> {
+		Box::new(self.clone())
+	}
 }
 
+#[derive(Clone)]
 struct NumbersWithRepetitions {
 	cur_number: Option<Number>,
 	number_len: u8,
@@ -294,6 +315,10 @@ impl RefIter for NumbersWithRepetitions {
 			Some(x) => Some(x),
 			None => None,
 		}
+	}
+
+	fn clone_dyn(&self) -> Box<dyn RefIter<Item = Self::Item>> {
+		Box::new(self.clone())
 	}
 }
 
