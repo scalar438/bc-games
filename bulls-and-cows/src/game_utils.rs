@@ -264,10 +264,7 @@ impl RefIter for NumbersWithoutRepetitions {
 			}
 		}
 
-		match &self.cur_number {
-			Some(x) => Some(x),
-			None => None,
-		}
+		self.cur_number.as_ref()
 	}
 
 	fn clone_dyn(&self) -> Box<dyn RefIter<Item = Self::Item>> {
@@ -311,10 +308,7 @@ impl RefIter for NumbersWithRepetitions {
 			}
 		}
 
-		match &self.cur_number {
-			Some(x) => Some(x),
-			None => None,
-		}
+		self.cur_number.as_ref()
 	}
 
 	fn clone_dyn(&self) -> Box<dyn RefIter<Item = Self::Item>> {
