@@ -59,7 +59,7 @@ where
 {
 	fn new(g: &game_utils::GameParams) -> BasicStrategy<F> {
 		let all_values: Vec<_> = get_numbers_iter(&g).collect();
-		let n = g.number_len();
+		let n = g.number_len;
 		BasicStrategy {
 			all_values,
 			candidates: Vec::new(),

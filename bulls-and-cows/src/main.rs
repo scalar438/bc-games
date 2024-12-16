@@ -190,9 +190,23 @@ fn solve_for_one_number(
 }
 
 fn main() {
-	const N: u8 = 4;
-
-	let g = game_utils::GameParams::new(N as u8);
+	let game_params;
+	match game_utils::GameParams::new_from_args() {
+		Ok(g) => game_params = g,
+		Err(e) => {
+			game_params = e.game_params;
+			println!("{:}", e.error_string);
+			let with_rep_s = if game_params.with_reps {
+				"with repetitions"
+			} else {
+				"without repetitions"
+			};
+			println!(
+				"Actual game params: base = {:}, number_len = {:}, {with_rep_s}",
+				game_params.base, game_params.number_len
+			);
+		}
+	}
 
 	if std::env::args().position(|x| x == "--analyze").is_some() {
 		for st in [
@@ -202,9 +216,9 @@ fn main() {
 			StrategyType::Landy,
 			StrategyType::MinAvg,
 		] {
-			let mut s = create_strategy(st, &g);
+			let mut s = create_strategy(st, &game_params);
 
-			match evaluate_strategy(s.as_mut(), &g) {
+			match evaluate_strategy(s.as_mut(), &game_params) {
 				Ok(res) => {
 					println!("Strategy type: {:?}, check successfull. Results", st);
 					println!(
@@ -228,9 +242,9 @@ fn main() {
 			Some(p) => {
 				if let Some(p_n) = std::env::args().nth(p + 1) {
 					solve_for_one_number(
-						&mut *create_strategy(StrategyType::AmountInformation, &g),
+						&mut *create_strategy(StrategyType::AmountInformation, &game_params),
 						Number::from(p_n),
-						&g,
+						&game_params,
 					);
 				} else {
 					println!("There is no required -n argument");
@@ -241,7 +255,7 @@ fn main() {
 			}
 		}
 	} else {
-		let mut s = create_strategy(StrategyType::Naive, &g);
+		let mut s = create_strategy(StrategyType::Naive, &game_params);
 
 		one_game(s.as_mut());
 	}

@@ -1,4 +1,5 @@
 use std::{
+	env::args,
 	fmt::{Display, Formatter},
 	mem::{self, MaybeUninit},
 };
@@ -50,11 +51,16 @@ where
 #[derive(Clone, Copy)]
 pub struct GameParams {
 	pub number_len: u8,
-	has_repetitions: bool,
-	base: u8,
+	pub with_reps: bool,
+	pub base: u8,
 }
 
 const MAX_BASE: u8 = 36;
+
+pub struct GameParamsParseError {
+	pub game_params: GameParams,
+	pub error_string: String,
+}
 
 impl GameParams {
 	pub fn new(number_len: u8) -> Self {
@@ -63,17 +69,76 @@ impl GameParams {
 		}
 		Self {
 			number_len,
-			has_repetitions: false,
+			with_reps: false,
 			base: 10,
 		}
 	}
 
-	pub fn number_len(&self) -> u8 {
-		self.number_len
+	// Parse command-line arguments, return the game params
+	// If error occured, returns game params either, with some params are set to default
+	pub fn new_from_args() -> Result<GameParams, GameParamsParseError> {
+		let mut need_read_nl = false;
+		let mut number_len = 4;
+
+		let mut need_read_base = false;
+		let mut base = 10;
+
+		let mut with_reps = false;
+
+		let mut error_string = None;
+		for arg in args() {
+			if need_read_nl {
+				match arg.parse::<u8>() {
+					Ok(val) => number_len = val,
+					Err(e) => error_string = Some(format!("Can't parse number_len: {:}", e.to_string())),
+				}
+				need_read_nl = false;
+			}
+			if arg == "-nl" || arg == "--number_len" {
+				need_read_nl = true;
+				continue;
+			}
+
+			if need_read_base {
+				match arg.parse::<u8>() {
+					Ok(val) => {
+						if val < 2 || val > 36 {
+							error_string = Some(format!("Base must be between 2 and {MAX_BASE}"));
+						} else {
+							base = val;
+						}
+					}
+					Err(e) => error_string = Some(format!("Can't parse base: {:}", e.to_string())),
+				}
+				need_read_base = false;
+			}
+			if arg == "-b" || arg == "--base" {
+				need_read_base = true;
+				continue;
+			}
+
+			if arg == "-wr" || arg == "--with_repetitions" {
+				with_reps = true;
+			}
+		}
+
+		let g = GameParams {
+			number_len,
+			with_reps,
+			base,
+		};
+		if let Some(error_string) = error_string {
+			Err(GameParamsParseError {
+				game_params: g,
+				error_string,
+			})
+		} else {
+			Ok(g)
+		}
 	}
 
 	pub fn with_repetitions(mut self, r: bool) -> Self {
-		self.has_repetitions = r;
+		self.with_reps = r;
 		self
 	}
 
@@ -91,7 +156,7 @@ impl GameParams {
 		for c in s.chars() {
 			match self.to_u8(c) {
 				Ok(v) => {
-					if !self.has_repetitions && digit_presented[v as usize] {
+					if !self.with_reps && digit_presented[v as usize] {
 						// It is a repetition
 						return None;
 					}
@@ -117,7 +182,7 @@ impl GameParams {
 			return None;
 		}
 		for b in num.data.iter() {
-			if !self.has_repetitions && digit_presented[*b as usize] {
+			if !self.with_reps && digit_presented[*b as usize] {
 				return None;
 			}
 			digit_presented[*b as usize] = true;
@@ -161,7 +226,7 @@ impl GameParams {
 }
 
 pub fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
-	if !g.has_repetitions {
+	if !g.with_reps {
 		Box::new(NumbersWithoutRepetitions {
 			cur_number: None,
 			used_digits: Vec::new(),
@@ -179,7 +244,7 @@ pub fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 
 pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 	// TODO: implement this using get_numbers_iter_ref
-	if !g.has_repetitions {
+	if !g.with_reps {
 		Box::new(NumbersWithoutRepetitions {
 			cur_number: None,
 			used_digits: Vec::new(),
