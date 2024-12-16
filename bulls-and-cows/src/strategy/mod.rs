@@ -51,6 +51,8 @@ where
 	last_guess: Number,
 	n: u8,
 	target_func: F,
+
+	distribution_buf: std::cell::RefCell<Vec<i32>>,
 }
 
 impl<F: TargetFunc> BasicStrategy<F>
@@ -59,24 +61,27 @@ where
 {
 	fn new(g: &game_utils::GameParams) -> BasicStrategy<F> {
 		let all_values: Vec<_> = get_numbers_iter(&g).collect();
-		let n = g.number_len;
+		let n = g.number_len as u16;
 		BasicStrategy {
 			all_values,
 			candidates: Vec::new(),
 			is_first: false,
 			last_guess: Number::default(),
-			n: n + 1,
+			n: (n + 1) as u8,
 			target_func: F::new(n as i32),
+			distribution_buf: std::cell::RefCell::new(vec![0; ((n + 1) * (n + 1)) as usize]),
 		}
 	}
 
 	fn evaluate_attempt(&self, attempt: &Number) -> F::EvaluationResult {
-		let mut v = [0; 25];
+		let mut distribution = self.distribution_buf.borrow_mut();
+		distribution.iter_mut().for_each(|x| *x = 0);
+
 		for ans in self.candidates.iter() {
 			let bc = game_utils::calc_bc_with_base(&attempt, &ans, 10);
-			v[(bc.0 * self.n + bc.1) as usize] += 1;
+			distribution[(bc.0 * self.n + bc.1) as usize] += 1;
 		}
-		let v: Vec<_> = v
+		let v: Vec<_> = distribution
 			.iter()
 			.filter_map(|x| if *x != 0 { Some(*x) } else { None })
 			.collect();
