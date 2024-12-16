@@ -197,6 +197,37 @@ enum GameMode {
 	Help,
 }
 
+enum ParseStrategyTypeError {
+	NotPresented,
+	UnknownStrategy(String),
+}
+
+fn parse_strategy_type() -> Result<StrategyType, ParseStrategyTypeError> {
+	let mut need_parse_strategy = false;
+	for s in args() {
+		if need_parse_strategy {
+			for (n, st) in [
+				("naive", StrategyType::Naive),
+				("amountinformation", StrategyType::AmountInformation),
+				("landy", StrategyType::Landy),
+				("minavg", StrategyType::MinAvg),
+				("minmax", StrategyType::MinMax),
+			] {
+				if s.to_lowercase() == n {
+					return Ok(st);
+				}
+			}
+			return Err(ParseStrategyTypeError::UnknownStrategy(s));
+		}
+		if s == "-st" || s == "--strategy_type" {
+			need_parse_strategy = true;
+			continue;
+		}
+	}
+
+	Err(ParseStrategyTypeError::NotPresented)
+}
+
 fn parse_game_mode() -> GameMode {
 	if let Some(arg) = args().nth(1) {
 		if arg == "solve" {
@@ -231,13 +262,23 @@ fn main() {
 
 	match parse_game_mode() {
 		GameMode::Analyze => {
-			for st in [
-				StrategyType::Naive,
-				StrategyType::AmountInformation,
-				StrategyType::MinMax,
-				StrategyType::Landy,
-				StrategyType::MinAvg,
-			] {
+			let strategies = match parse_strategy_type() {
+				Ok(st) => vec![st],
+
+				Err(ParseStrategyTypeError::NotPresented) => vec![
+					StrategyType::Naive,
+					StrategyType::AmountInformation,
+					StrategyType::MinMax,
+					StrategyType::Landy,
+					StrategyType::MinAvg,
+				],
+
+				Err(ParseStrategyTypeError::UnknownStrategy(s)) => {
+					println!("Unknown strategy type: {s}");
+					return;
+				}
+			};
+			for st in strategies {
 				let mut s = create_strategy(st, &game_params);
 
 				match evaluate_strategy(s.as_mut(), &game_params) {
@@ -265,8 +306,17 @@ fn main() {
 			Some(p) => {
 				if let Some(p_n) = std::env::args().nth(p + 1) {
 					if let Some(num) = game_params.to_number_checked(&p_n) {
+						let st;
+						match parse_strategy_type() {
+							Ok(s) => st = s,
+							Err(_) => {
+								st = StrategyType::Naive;
+								println!("Can't parse a strategy type. Use {:?}", st);
+							}
+						};
+
 						solve_for_one_number(
-							&mut *create_strategy(StrategyType::AmountInformation, &game_params),
+							&mut *create_strategy(st, &game_params),
 							num,
 							&game_params,
 						);
@@ -283,7 +333,16 @@ fn main() {
 		},
 
 		GameMode::Solve => {
-			let mut s = create_strategy(StrategyType::Naive, &game_params);
+			let st;
+			match parse_strategy_type() {
+				Ok(s) => st = s,
+				Err(_) => {
+					st = StrategyType::Naive;
+					println!("Can't parse a strategy type. Use {:?}", st);
+				}
+			};
+
+			let mut s = create_strategy(st, &game_params);
 
 			one_game(s.as_mut());
 		}
