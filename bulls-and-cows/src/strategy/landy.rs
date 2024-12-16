@@ -1,3 +1,5 @@
+use crate::game_utils;
+
 use super::TargetFunc;
 use std::sync::Arc;
 
@@ -9,7 +11,7 @@ pub struct LandyFunc {
 impl TargetFunc for LandyFunc {
 	type EvaluationResult = f64;
 
-	fn new(_: i32) -> Self {
+	fn new(_: &game_utils::GameParams) -> Self {
 		let l = 10000;
 		Self {
 			inv_values: Arc::new(

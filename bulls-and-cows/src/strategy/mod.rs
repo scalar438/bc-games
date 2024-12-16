@@ -1,5 +1,3 @@
-use crate::game_utils::get_numbers_iter;
-
 use super::game_utils;
 use super::game_utils::Number;
 
@@ -24,7 +22,7 @@ pub trait Strategy: Send {
 trait TargetFunc: Clone + Send {
 	type EvaluationResult;
 
-	fn new(n: i32) -> Self;
+	fn new(g: &super::game_utils::GameParams) -> Self;
 
 	fn evaluate_distribution(
 		&self,
@@ -51,6 +49,7 @@ where
 	last_guess: Number,
 	n: u8,
 	target_func: F,
+	with_repetitions: bool,
 
 	distribution_buf: std::cell::RefCell<Vec<i32>>,
 }
@@ -60,7 +59,7 @@ where
 	F::EvaluationResult: PartialOrd,
 {
 	fn new(g: &game_utils::GameParams) -> BasicStrategy<F> {
-		let all_values: Vec<_> = get_numbers_iter(&g).collect();
+		let all_values: Vec<_> = game_utils::get_numbers_iter(&g).collect();
 		let n = g.number_len as u16;
 		BasicStrategy {
 			all_values,
@@ -68,7 +67,8 @@ where
 			is_first: false,
 			last_guess: Number::default(),
 			n: (n + 1) as u8,
-			target_func: F::new(n as i32),
+			with_repetitions: g.with_reps,
+			target_func: F::new(&g),
 			distribution_buf: std::cell::RefCell::new(vec![0; ((n + 1) * (n + 1)) as usize]),
 		}
 	}
@@ -95,7 +95,8 @@ where
 	F::EvaluationResult: PartialOrd + core::fmt::Debug,
 {
 	fn init(&mut self) {
-		self.is_first = true;
+		// If repetitions are allowed, we can't pick any number as first attempt (is_first must be false)
+		self.is_first = !self.with_repetitions;
 		self.candidates = self.all_values.clone();
 	}
 
@@ -162,7 +163,7 @@ pub enum StrategyType {
 	// Strategy that tries to minimize the worst case. It isn't the best on average
 	MinMax,
 
-	// Strategy that uses Landy's formula for picking an attempt
+	// Strategy that uses Landy's formula (see the implementation) for picking an attempt
 	Landy,
 
 	// Strategy that tries to minimize the average candidates left on the next step

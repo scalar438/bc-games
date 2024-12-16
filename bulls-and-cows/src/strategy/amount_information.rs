@@ -1,3 +1,5 @@
+use crate::game_utils;
+
 use super::TargetFunc;
 
 #[derive(Clone)]
@@ -6,7 +8,7 @@ pub struct AmountInfFunc {}
 impl TargetFunc for AmountInfFunc {
 	type EvaluationResult = f64;
 
-	fn new(_: i32) -> Self {
+	fn new(_: &game_utils::GameParams) -> Self {
 		Self {}
 	}
 

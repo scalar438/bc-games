@@ -1,3 +1,5 @@
+use crate::game_utils::GameParams;
+
 use super::TargetFunc;
 
 #[derive(Clone)]
@@ -6,7 +8,7 @@ pub struct MinMaxFunc {}
 impl TargetFunc for MinMaxFunc {
 	type EvaluationResult = Vec<i32>;
 
-	fn new(_: i32) -> Self {
+	fn new(_: &GameParams) -> Self {
 		Self {}
 	}
 

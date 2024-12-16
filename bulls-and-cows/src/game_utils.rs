@@ -239,7 +239,7 @@ pub fn get_numbers_iter_ref(g: &GameParams) -> Box<dyn RefIter<Item = Number>> {
 		Box::new(NumbersWithRepetitions {
 			cur_number: None,
 			number_len: g.number_len,
-			total_digits_number: g.base,
+			maxval: g.base - 1,
 		})
 	}
 }
@@ -257,7 +257,7 @@ pub fn get_numbers_iter(g: &GameParams) -> Box<dyn Iterator<Item = Number>> {
 		Box::new(NumbersWithRepetitions {
 			cur_number: None,
 			number_len: g.number_len,
-			total_digits_number: g.base,
+			maxval: g.base - 1,
 		})
 	}
 }
@@ -343,7 +343,7 @@ impl RefIter for NumbersWithoutRepetitions {
 struct NumbersWithRepetitions {
 	cur_number: Option<Number>,
 	number_len: u8,
-	total_digits_number: u8,
+	maxval: u8,
 }
 
 impl Iterator for NumbersWithRepetitions {
@@ -361,7 +361,7 @@ impl RefIter for NumbersWithRepetitions {
 	fn next(&mut self) -> Option<&Self::Item> {
 		match &mut self.cur_number {
 			Some(num) => {
-				if !increase_vector(&mut num.data, self.total_digits_number) {
+				if !increase_vector(&mut num.data, self.maxval) {
 					self.cur_number = None;
 				}
 			}
@@ -670,7 +670,7 @@ mod test {
 	}
 
 	#[test]
-	fn test_gen_numbers() {
+	fn test_gen_numbers_without_reps() {
 		{
 			let g = GameParams::new(1).with_base(5);
 			let it = get_numbers_iter(&g);
@@ -708,6 +708,36 @@ mod test {
 			let mut expected = ["012", "021", "102", "120", "210", "201"];
 			expected.sort();
 			assert_eq!(v, expected);
+		}
+	}
+
+	#[test]
+	fn test_gen_numbers_with_reps() {
+		{
+			let g = GameParams::new(2).with_base(4).with_repetitions(true);
+			let it = get_numbers_iter(&g);
+			let mut v = Vec::new();
+			for x in it {
+				v.push(x.to_string());
+			}
+			v.sort();
+			assert_eq!(
+				v,
+				[
+					"00", "01", "02", "03", "10", "11", "12", "13", "20", "21", "22", "23", "30",
+					"31", "32", "33"
+				]
+			);
+		}
+		{
+			let g = GameParams::new(1).with_base(8).with_repetitions(true);
+			let it = get_numbers_iter(&g);
+			let mut v = Vec::new();
+			for x in it {
+				v.push(x.to_string());
+			}
+			v.sort();
+			assert_eq!(v, ["0", "1", "2", "3", "4", "5", "6", "7"]);
 		}
 	}
 }
