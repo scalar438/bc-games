@@ -90,7 +90,9 @@ impl GameParams {
 			if need_read_nl {
 				match arg.parse::<u8>() {
 					Ok(val) => number_len = val,
-					Err(e) => error_string = Some(format!("Can't parse number_len: {:}", e.to_string())),
+					Err(e) => {
+						error_string = Some(format!("Can't parse number_len: {:}", e.to_string()))
+					}
 				}
 				need_read_nl = false;
 			}

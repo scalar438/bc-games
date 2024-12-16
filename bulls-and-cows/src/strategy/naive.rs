@@ -5,7 +5,7 @@ use super::Strategy;
 
 #[derive(Clone)]
 pub struct NaiveStrategy {
-	cur_number: Box<dyn RefIter<Item = Number>>,
+	cur_number_iter: Box<dyn RefIter<Item = Number>>,
 	responses: Vec<(Number, u8, u8)>,
 	game: GameParams,
 	last_response: Number,
@@ -14,7 +14,7 @@ pub struct NaiveStrategy {
 impl NaiveStrategy {
 	pub fn new(game: GameParams) -> Self {
 		NaiveStrategy {
-			cur_number: game_utils::get_numbers_iter_ref(&game),
+			cur_number_iter: game_utils::get_numbers_iter_ref(&game),
 			responses: Vec::new(),
 			game,
 			last_response: Number::empty(),
@@ -24,12 +24,12 @@ impl NaiveStrategy {
 
 impl Strategy for NaiveStrategy {
 	fn init(&mut self) {
-		self.cur_number = game_utils::get_numbers_iter_ref(&self.game);
+		self.cur_number_iter = game_utils::get_numbers_iter_ref(&self.game);
 		self.responses.clear();
 	}
 
 	fn make_guess(&mut self) -> Option<&Number> {
-		while let Some(new_num) = self.cur_number.next() {
+		while let Some(new_num) = self.cur_number_iter.next() {
 			if self
 				.responses
 				.iter()
