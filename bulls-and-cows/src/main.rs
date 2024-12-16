@@ -264,11 +264,15 @@ fn main() {
 		GameMode::Print => match std::env::args().position(|x| x == "-n") {
 			Some(p) => {
 				if let Some(p_n) = std::env::args().nth(p + 1) {
-					solve_for_one_number(
-						&mut *create_strategy(StrategyType::AmountInformation, &game_params),
-						Number::from(p_n),
-						&game_params,
-					);
+					if let Some(num) = game_params.to_number_checked(&p_n) {
+						solve_for_one_number(
+							&mut *create_strategy(StrategyType::AmountInformation, &game_params),
+							num,
+							&game_params,
+						);
+					} else {
+						println!("The number {p_n} doesn't fit to the game parameters");
+					}
 				} else {
 					println!("There is no required -n argument");
 				}
