@@ -2,6 +2,7 @@ mod game_utils;
 mod strategy;
 
 use std::{
+	env::args,
 	mem,
 	num::NonZero,
 	sync::{mpsc::channel, Arc, Mutex},
@@ -189,6 +190,26 @@ fn solve_for_one_number(
 	}
 }
 
+enum GameMode {
+	Solve,
+	Print,
+	Analyze,
+	Help,
+}
+
+fn parse_game_mode() -> GameMode {
+	if let Some(arg) = args().nth(1) {
+		if arg == "solve" {
+			return GameMode::Solve;
+		} else if arg == "print" {
+			return GameMode::Print;
+		} else if arg == "analyze" {
+			return GameMode::Analyze;
+		}
+	}
+	return GameMode::Help;
+}
+
 fn main() {
 	let game_params;
 	match game_utils::GameParams::new_from_args() {
@@ -208,37 +229,39 @@ fn main() {
 		}
 	}
 
-	if std::env::args().position(|x| x == "--analyze").is_some() {
-		for st in [
-			StrategyType::Naive,
-			StrategyType::AmountInformation,
-			StrategyType::MinMax,
-			StrategyType::Landy,
-			StrategyType::MinAvg,
-		] {
-			let mut s = create_strategy(st, &game_params);
+	match parse_game_mode() {
+		GameMode::Analyze => {
+			for st in [
+				StrategyType::Naive,
+				StrategyType::AmountInformation,
+				StrategyType::MinMax,
+				StrategyType::Landy,
+				StrategyType::MinAvg,
+			] {
+				let mut s = create_strategy(st, &game_params);
 
-			match evaluate_strategy(s.as_mut(), &game_params) {
-				Ok(res) => {
-					println!("Strategy type: {:?}, check successfull. Results", st);
-					println!(
-						"Total number of guesses {:}, average {:}",
-						res.total, res.avg
-					);
-					println!(
-						"Worst number {:} guessed with {:} attempts",
-						res.worst_number, res.worst_guess_count
-					);
-					println!("Total time: {:?}\n", res.time);
+				match evaluate_strategy(s.as_mut(), &game_params) {
+					Ok(res) => {
+						println!("Strategy type: {:?}, check successfull. Results", st);
+						println!(
+							"Total number of guesses {:}, average {:}",
+							res.total, res.avg
+						);
+						println!(
+							"Worst number {:} guessed with {:} attempts",
+							res.worst_number, res.worst_guess_count
+						);
+						println!("Total time: {:?}\n", res.time);
+					}
+					Err(s) => println!(
+						"Strategy type: {:?} isn't able to solve the puzzle. Error message: {:}",
+						st, s
+					),
 				}
-				Err(s) => println!(
-					"Strategy type: {:?} isn't able to solve the puzzle. Error message: {:}",
-					st, s
-				),
 			}
 		}
-	} else if std::env::args().position(|x| x == "--one_game").is_some() {
-		match std::env::args().position(|x| x == "-n") {
+
+		GameMode::Print => match std::env::args().position(|x| x == "-n") {
 			Some(p) => {
 				if let Some(p_n) = std::env::args().nth(p + 1) {
 					solve_for_one_number(
@@ -253,10 +276,16 @@ fn main() {
 			None => {
 				println!("There is no required -n argument");
 			}
-		}
-	} else {
-		let mut s = create_strategy(StrategyType::Naive, &game_params);
+		},
 
-		one_game(s.as_mut());
+		GameMode::Solve => {
+			let mut s = create_strategy(StrategyType::Naive, &game_params);
+
+			one_game(s.as_mut());
+		}
+
+		GameMode::Help => {
+			println!("This is a help message :)");
+		}
 	}
 }
