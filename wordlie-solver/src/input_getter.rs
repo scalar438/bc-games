@@ -18,7 +18,7 @@ pub struct InputGetter {
 	word_len: usize,
 }
 
-fn is_accepted(colored_str: &ColoredString) -> std::io::Result<bool> {
+fn is_accepted(colored_str: &ColoredString) -> dialoguer::Result<bool> {
 	println!("Your answer is {0}?", colored_str);
 	dialoguer::Confirm::new().interact()
 }
