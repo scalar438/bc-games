@@ -495,16 +495,16 @@ mod test {
 		assert_ne!(attempt1, attempt2);
 	}
 
-	// In this test is the most reasonable choise as the first attempt is "abc" or "cbg"
-	// If we chose "bde", one of the possible answers is "100" is matched with two words - "fcb" and "abc",
+	// In this test the most reasonable choice is "abc" or "cbg" as the first attempt
+	// If we choose "bde", one of the possible answers is "100" matched with two words - "fcb" and "abc",
 	// so we have to guess between them if we get this answer
-	// By the same reason, the word "fcb" and "011" as answer tells us the possible word either "abc" or "cbg"
-	// For the word "abc" we have three possbile answers (in assumption that our attempt isn't correct):
-	//    "010" tells as that word is "bde",
+	// By the same reason, the word "fcb" and "011" as answer tells us the possible word is either "abc" or "cbg"
+	// For the word "abc" we have three possible answers (in assumption that our attempt isn't correct):
+	//    "010" tells us that word is "bde",
 	//    "011" - "fcb",
 	//    "021" - "cbg",
 	// Because we have no possible answers with more than one words, the answer "abc" better than previous ones
-	// The "cbg" is a good choise either, because:
+	// The "cbg" is a good choice either, because:
 	//    "010" - "bde"
 	//    "110" - "fcb"
 	//    "120" - "abc"

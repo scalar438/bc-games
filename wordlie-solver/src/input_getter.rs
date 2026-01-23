@@ -76,7 +76,7 @@ impl InputGetter {
 					}
 
 					if s.chars().any(|x| x != '0' && x != '1' && x != '2') {
-						println!("This string contains forbidden symbol(s). Use can use just 0, 1 and 2 as answer");
+						println!("This string contains forbidden symbol(s). You can use just 0, 1 and 2 as answer");
 						continue;
 					}
 
