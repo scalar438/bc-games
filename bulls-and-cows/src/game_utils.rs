@@ -75,16 +75,20 @@ impl GameParams {
 	// Parse command-line arguments, return the game params
 	// If error occured, returns game params either, with some params are set to default
 	pub fn new_from_args() -> Result<GameParams, GameParamsError> {
-		let mut result = GameParams::new(4);
 		let mut error_string = None;
 
 		let mut need_read_nl = false;
+		let mut number_len = 4;
+
 		let mut need_read_base = false;
+		let mut base = 10;
+
+		let mut with_repetitions = false;
 
 		for arg in args() {
 			if need_read_nl {
 				match arg.parse::<u8>() {
-					Ok(val) => result.number_len = val,
+					Ok(val) => number_len = val,
 					Err(e) => {
 						error_string = Some(format!("Can't parse number_len: {:}", e.to_string()))
 					}
@@ -98,9 +102,7 @@ impl GameParams {
 
 			if need_read_base {
 				match arg.parse::<u8>() {
-					Ok(val) => {
-						result = result.with_base(val)?;
-					}
+					Ok(val) => base = val,
 					Err(e) => error_string = Some(format!("Can't parse base: {:}", e.to_string())),
 				}
 				need_read_base = false;
@@ -111,9 +113,13 @@ impl GameParams {
 			}
 
 			if arg == "-wr" || arg == "--with_repetitions" {
-				result = result.with_repetitions(true);
+				with_repetitions = true;
 			}
 		}
+
+		let result = GameParams::new(number_len)
+			.with_repetitions(with_repetitions)?
+			.with_base(base)?;
 
 		if let Some(error_string) = error_string {
 			Err(GameParamsError {
@@ -125,21 +131,40 @@ impl GameParams {
 		}
 	}
 
-	pub fn with_repetitions(mut self, r: bool) -> Self {
-		self.with_reps = r;
-		self
-	}
-
-	pub fn with_base(mut self, base: u8) -> Result<Self, GameParamsError> {
-		if base > MAX_BASE {
+	pub fn with_repetitions(self, with_reps: bool) -> Result<Self, GameParamsError> {
+		let mut copy = self;
+		copy.with_reps = with_reps;
+		if let Some(error_string) = copy.validate() {
 			return Err(GameParamsError {
 				game_params: self,
-				error_string: "Number of digits can't be more than {MAX_BASE}".to_owned(),
+				error_string,
 			});
 		}
 
-		self.base = base;
-		Ok(self)
+		Ok(copy)
+	}
+
+	pub fn with_base(self, base: u8) -> Result<Self, GameParamsError> {
+		let mut copy = self;
+		copy.base = base;
+		if let Some(error_string) = copy.validate() {
+			return Err(GameParamsError {
+				game_params: self,
+				error_string,
+			});
+		}
+
+		Ok(copy)
+	}
+
+	pub fn validate(&self) -> Option<String> {
+		if self.base > MAX_BASE {
+			return Some("Base can't be bigger than {MAX_BASE}".to_owned());
+		}
+		if !self.with_reps && self.base < self.number_len {
+			return Some("Base must be bigger or equal if repetitions aren't allowed".to_owned());
+		}
+		None
 	}
 
 	pub fn to_number_checked(&self, s: &str) -> Option<Number> {
@@ -619,7 +644,7 @@ mod test {
 		assert!(g.to_string_checked(&gen_number(&[7, 7, 4, 0])).is_none());
 		assert!(g.to_string_checked(&gen_number(&[7, 10, 4, 0])).is_none());
 
-		let g = g.with_repetitions(true);
+		let g = g.with_repetitions(true).unwrap();
 		assert_eq!(
 			g.to_string_checked(&gen_number(&[6, 7, 4, 0])).unwrap(),
 			"6740"
@@ -707,7 +732,8 @@ mod test {
 			let g = GameParams::new(2)
 				.with_base(4)
 				.unwrap()
-				.with_repetitions(true);
+				.with_repetitions(true)
+				.unwrap();
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -726,7 +752,8 @@ mod test {
 			let g = GameParams::new(1)
 				.with_base(8)
 				.unwrap()
-				.with_repetitions(true);
+				.with_repetitions(true)
+				.unwrap();
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
