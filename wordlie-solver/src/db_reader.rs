@@ -150,10 +150,7 @@ mod test {
 	fn test_init() {
 		let fname = std::path::Path::new("./test_create_db");
 		if fname.exists() {
-			panic!(
-				"The file/folder {:?} exists before running tests!",
-				fname
-			);
+			panic!("The file/folder {:?} exists before running tests!", fname);
 		}
 
 		let mut file_delete_failed = false;
@@ -190,10 +187,7 @@ mod test {
 	fn test_read_and_write() {
 		let fname = std::path::Path::new("./test_read_and_write_db");
 		if fname.exists() {
-			panic!(
-				"The file/folder {:?} exists before running tests!",
-				fname
-			);
+			panic!("The file/folder {:?} exists before running tests!", fname);
 		}
 
 		let mut file_delete_failed = false;
@@ -240,10 +234,7 @@ mod test {
 	fn test_multiple_len() {
 		let fname = std::path::Path::new("./test_multiple_len_db");
 		if fname.exists() {
-			panic!(
-				"The file/folder {:?} exists before running tests!",
-				fname
-			);
+			panic!("The file/folder {:?} exists before running tests!", fname);
 		}
 
 		let mut file_delete_failed = false;
@@ -288,10 +279,7 @@ mod test {
 	fn test_flush_with_multiple_len() {
 		let fname = std::path::Path::new("./test_flush_with_multiple_len_db");
 		if fname.exists() {
-			panic!(
-				"The file/folder {:?} exists before running tests!",
-				fname
-			);
+			panic!("The file/folder {:?} exists before running tests!", fname);
 		}
 		let mut file_delete_failed = false;
 		{
