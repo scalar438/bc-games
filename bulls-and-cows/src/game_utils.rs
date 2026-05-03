@@ -48,7 +48,7 @@ where
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct GameParams {
 	pub number_len: u8,
 	pub with_reps: bool,
@@ -57,16 +57,14 @@ pub struct GameParams {
 
 const MAX_BASE: u8 = 36;
 
-pub struct GameParamsParseError {
+#[derive(Debug)]
+pub struct GameParamsError {
 	pub game_params: GameParams,
 	pub error_string: String,
 }
 
 impl GameParams {
 	pub fn new(number_len: u8) -> Self {
-		if number_len > MAX_BASE {
-			panic!("number_len is too large");
-		}
 		Self {
 			number_len,
 			with_reps: false,
@@ -76,20 +74,17 @@ impl GameParams {
 
 	// Parse command-line arguments, return the game params
 	// If error occured, returns game params either, with some params are set to default
-	pub fn new_from_args() -> Result<GameParams, GameParamsParseError> {
-		let mut need_read_nl = false;
-		let mut number_len = 4;
-
-		let mut need_read_base = false;
-		let mut base = 10;
-
-		let mut with_reps = false;
-
+	pub fn new_from_args() -> Result<GameParams, GameParamsError> {
+		let mut result = GameParams::new(4);
 		let mut error_string = None;
+
+		let mut need_read_nl = false;
+		let mut need_read_base = false;
+
 		for arg in args() {
 			if need_read_nl {
 				match arg.parse::<u8>() {
-					Ok(val) => number_len = val,
+					Ok(val) => result.number_len = val,
 					Err(e) => {
 						error_string = Some(format!("Can't parse number_len: {:}", e.to_string()))
 					}
@@ -104,11 +99,7 @@ impl GameParams {
 			if need_read_base {
 				match arg.parse::<u8>() {
 					Ok(val) => {
-						if val < 2 || val > 36 {
-							error_string = Some(format!("Base must be between 2 and {MAX_BASE}"));
-						} else {
-							base = val;
-						}
+						result = result.with_base(val)?;
 					}
 					Err(e) => error_string = Some(format!("Can't parse base: {:}", e.to_string())),
 				}
@@ -120,22 +111,17 @@ impl GameParams {
 			}
 
 			if arg == "-wr" || arg == "--with_repetitions" {
-				with_reps = true;
+				result = result.with_repetitions(true);
 			}
 		}
 
-		let g = GameParams {
-			number_len,
-			with_reps,
-			base,
-		};
 		if let Some(error_string) = error_string {
-			Err(GameParamsParseError {
-				game_params: g,
+			Err(GameParamsError {
+				game_params: result,
 				error_string,
 			})
 		} else {
-			Ok(g)
+			Ok(result)
 		}
 	}
 
@@ -144,12 +130,16 @@ impl GameParams {
 		self
 	}
 
-	pub fn with_base(mut self, base: u8) -> Self {
+	pub fn with_base(mut self, base: u8) -> Result<Self, GameParamsError> {
 		if base > MAX_BASE {
-			panic!("Number of digits can't be more than {MAX_BASE}");
+			return Err(GameParamsError {
+				game_params: self,
+				error_string: "Number of digits can't be more than {MAX_BASE}".to_owned(),
+			});
 		}
+
 		self.base = base;
-		self
+		Ok(self)
 	}
 
 	pub fn to_number_checked(&self, s: &str) -> Option<Number> {
@@ -546,7 +536,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_6() {
-		let g = GameParams::new(5).with_base(6);
+		let g = GameParams::new(5).with_base(6).unwrap();
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert!(g.to_char(6).is_err());
@@ -556,7 +546,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_10() {
-		let g = GameParams::new(5).with_base(10);
+		let g = GameParams::new(5).with_base(10).unwrap();
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -567,7 +557,7 @@ mod test {
 
 	#[test]
 	fn test_to_char_17() {
-		let g = GameParams::new(5).with_base(17);
+		let g = GameParams::new(5).with_base(17).unwrap();
 		assert_eq!(g.to_char(0).unwrap(), '0');
 		assert_eq!(g.to_char(5).unwrap(), '5');
 		assert_eq!(g.to_char(9).unwrap(), '9');
@@ -580,7 +570,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_6() {
-		let g = GameParams::new(2).with_base(6);
+		let g = GameParams::new(2).with_base(6).unwrap();
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert!(g.to_u8('6').is_err());
@@ -590,7 +580,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_10() {
-		let g = GameParams::new(2).with_base(10);
+		let g = GameParams::new(2).with_base(10).unwrap();
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
@@ -601,7 +591,7 @@ mod test {
 
 	#[test]
 	fn test_to_u8_13() {
-		let g = GameParams::new(2).with_base(13);
+		let g = GameParams::new(2).with_base(13).unwrap();
 		assert_eq!(g.to_u8('0').unwrap(), 0);
 		assert_eq!(g.to_u8('5').unwrap(), 5);
 		assert_eq!(g.to_u8('9').unwrap(), 9);
@@ -672,7 +662,7 @@ mod test {
 	#[test]
 	fn test_gen_numbers_without_reps() {
 		{
-			let g = GameParams::new(1).with_base(5);
+			let g = GameParams::new(1).with_base(5).unwrap();
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -683,7 +673,7 @@ mod test {
 		}
 
 		{
-			let g = GameParams::new(2).with_base(3);
+			let g = GameParams::new(2).with_base(3).unwrap();
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -697,7 +687,7 @@ mod test {
 		}
 
 		{
-			let g = GameParams::new(3).with_base(3);
+			let g = GameParams::new(3).with_base(3).unwrap();
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -714,7 +704,10 @@ mod test {
 	#[test]
 	fn test_gen_numbers_with_reps() {
 		{
-			let g = GameParams::new(2).with_base(4).with_repetitions(true);
+			let g = GameParams::new(2)
+				.with_base(4)
+				.unwrap()
+				.with_repetitions(true);
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
@@ -730,7 +723,10 @@ mod test {
 			);
 		}
 		{
-			let g = GameParams::new(1).with_base(8).with_repetitions(true);
+			let g = GameParams::new(1)
+				.with_base(8)
+				.unwrap()
+				.with_repetitions(true);
 			let it = get_numbers_iter(&g);
 			let mut v = Vec::new();
 			for x in it {
