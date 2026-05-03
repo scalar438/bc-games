@@ -228,6 +228,18 @@ fn parse_strategy_type() -> Result<StrategyType, ParseStrategyTypeError> {
 	Err(ParseStrategyTypeError::NotPresented)
 }
 
+fn parse_strategy_type_def() -> StrategyType {
+	match parse_strategy_type() {
+		Ok(s) => s,
+
+		Err(_) => {
+			let s = StrategyType::Naive;
+			println!("Couldn't parse a strategy type. {:?} will be used", s);
+			s
+		}
+	}
+}
+
 fn parse_game_mode() -> GameMode {
 	if let Some(arg) = args().nth(1) {
 		if arg == "solve" {
@@ -306,17 +318,8 @@ fn main() {
 			Some(p) => {
 				if let Some(p_n) = std::env::args().nth(p + 1) {
 					if let Some(num) = game_params.to_number_checked(&p_n) {
-						let st;
-						match parse_strategy_type() {
-							Ok(s) => st = s,
-							Err(_) => {
-								st = StrategyType::Naive;
-								println!("Can't parse a strategy type. Use {:?}", st);
-							}
-						};
-
 						solve_for_one_number(
-							&mut *create_strategy(st, &game_params),
+							&mut *create_strategy(parse_strategy_type_def(), &game_params),
 							num,
 							&game_params,
 						);
@@ -333,16 +336,7 @@ fn main() {
 		},
 
 		GameMode::Solve => {
-			let st;
-			match parse_strategy_type() {
-				Ok(s) => st = s,
-				Err(_) => {
-					st = StrategyType::Naive;
-					println!("Can't parse a strategy type. Use {:?}", st);
-				}
-			};
-
-			let mut s = create_strategy(st, &game_params);
+			let mut s = create_strategy(parse_strategy_type_def(), &game_params);
 
 			one_game(s.as_mut());
 		}
