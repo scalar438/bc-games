@@ -6,4 +6,4 @@ edition = "2024"
 
 [dependencies]
 colored = "3"
-dialoguer = "0.12"
+dialoguer = { version = "0.12", default-features = false}
