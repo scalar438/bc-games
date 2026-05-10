@@ -2,7 +2,7 @@
 name = "wordlie-solver"
 version = "0.1.2"
 authors = ["as.larin@hotmail.com"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 colored = "3"
