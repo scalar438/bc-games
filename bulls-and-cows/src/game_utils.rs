@@ -4,9 +4,31 @@ use std::{
 	mem::{self, MaybeUninit},
 };
 
+use colored::Colorize;
+
 #[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Default, Hash)]
 pub struct Number {
 	data: Vec<u8>,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum BCTag {
+	None,
+	Bull,
+	Cow,
+}
+
+pub struct TaggedNumber {
+	tokens: Vec<colored::ColoredString>,
+}
+
+impl Display for TaggedNumber {
+	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+		for token in &self.tokens {
+			write!(f, "{}", token)?;
+		}
+		Ok(())
+	}
 }
 
 impl Number {
@@ -239,6 +261,75 @@ impl GameParams {
 	// Returns (number_of_bulls, number_of_cows)
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
 		calc_bc_with_base(a, b, self.base)
+	}
+
+	pub fn calc_bc_extended(&self, guess: &Number, hidden: &Number) -> (u8, u8, TaggedNumber) {
+		assert_eq!(guess.data.len(), hidden.data.len());
+
+		let gen_chars = |a: &Number| {
+			let mut res = vec![0u8; MAX_BASE as usize];
+			for c in a.data.iter() {
+				res[*c as usize] += 1;
+			}
+			return res;
+		};
+
+		let mut chars: Vec<u8> = gen_chars(guess)
+			.iter()
+			.zip(gen_chars(hidden).iter())
+			.map(|(v1, v2)| *std::cmp::min(v1, v2))
+			.collect();
+
+		let mut tags = Vec::new();
+		let mut bulls = 0;
+		for (d1, d2) in guess.data.iter().zip(hidden.data.iter()) {
+			if d1 == d2 {
+				tags.push(BCTag::Bull);
+				bulls += 1;
+				chars[*d1 as usize] -= 1;
+			} else {
+				tags.push(BCTag::None);
+			}
+		}
+
+		let mut cows = 0;
+		for (d1, tag) in guess.data.iter().zip(tags.iter_mut()) {
+			if chars[*d1 as usize] == 0 || *tag == BCTag::Bull {
+				continue;
+			}
+
+			chars[*d1 as usize] -= 1;
+			*tag = BCTag::Cow;
+			cows += 1;
+		}
+
+		let mut tokens = Vec::new();
+		let mut cur_token = String::new();
+		let mut cur_tag = BCTag::None;
+		let mut is_first = true;
+		for (tag, digit) in tags.iter().zip(guess.data.iter()) {
+			if is_first || *tag == cur_tag {
+				cur_token.push(self.to_char(*digit).unwrap());
+				is_first = false;
+				cur_tag = *tag;
+			} else {
+				tokens.push(match cur_tag {
+					BCTag::None => cur_token.normal(),
+					BCTag::Bull => cur_token.green(),
+					BCTag::Cow => cur_token.yellow(),
+				});
+				cur_token.clear();
+				cur_token.push(self.to_char(*digit).unwrap());
+				cur_tag = *tag;
+			}
+		}
+		tokens.push(match cur_tag {
+			BCTag::None => cur_token.normal(),
+			BCTag::Bull => cur_token.green(),
+			BCTag::Cow => cur_token.yellow(),
+		});
+
+		(bulls, cows, TaggedNumber { tokens })
 	}
 }
 

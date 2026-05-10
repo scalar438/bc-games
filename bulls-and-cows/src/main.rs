@@ -173,10 +173,10 @@ fn solve_for_one_number(
 	let mut counter = 1;
 	loop {
 		if let Some(guess) = a.make_guess() {
-			let (bulls, cows) = g.calc_bc(guess, &hidden_number);
+			let (bulls, cows, colored_number) = g.calc_bc_extended(guess, &hidden_number);
 			println!(
 				"Guess #{:?}: {:}, answer is {:} bulls, {:} cows",
-				counter, guess, bulls, cows
+				counter, colored_number, bulls, cows
 			);
 			if bulls == g.number_len {
 				break;
