@@ -1,7 +1,7 @@
 use crate::game_utils::{self, RefIter};
 
-use super::game_utils::{GameParams, Number};
 use super::Strategy;
+use super::game_utils::{GameParams, Number};
 
 #[derive(Clone)]
 pub struct NaiveStrategy {

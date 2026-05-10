@@ -5,11 +5,11 @@ use std::{
 	env::args,
 	mem,
 	num::NonZero,
-	sync::{mpsc::channel, Arc, Mutex},
+	sync::{Arc, Mutex, mpsc::channel},
 };
 
 use game_utils::Number;
-use strategy::{create_strategy, StrategyType};
+use strategy::{StrategyType, create_strategy};
 
 #[derive(Debug, Default)]
 struct EvaluationResult {
@@ -163,7 +163,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 	}
 }
 
-// Run the strategy to guess the given hidden number, print the all steps
+// Run the strategy to guess the given hidden number and print all steps
 fn solve_for_one_number(
 	a: &mut dyn strategy::Strategy,
 	hidden_number: Number,

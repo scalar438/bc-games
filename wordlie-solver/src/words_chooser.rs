@@ -31,7 +31,7 @@ impl WordsChooser {
 		WordsChooser {
 			words_container: WordsContainer::new(all_words),
 			state: ChoiseState::ReadyToMakeGuess,
-			word_len: 5, // TODO: make a right value
+			word_len: 5, // TODO: choose the correct value
 			last_word: None,
 		}
 	}
@@ -108,10 +108,10 @@ impl WordsContainer {
 		}
 	}
 
-	// Return all possible words in the order "candidates are first, other last"
-	// This provides the highest priority for the words that match to the previous attempts
+	// Return all possible words in the order "candidates are first, others are last"
+	// This gives the highest priority to words that match previous attempts
 	// Without this ordering the algorithm won't guess the right word if it has only one candidate
-	// left, because any other word won't decrease expected number of candidates
+	// left, because any other word won't decrease the expected number of candidates
 	fn construct_list_of_words(&self) -> Vec<&str> {
 		if self.candidate_words.is_empty() {
 			return Vec::new();
@@ -143,10 +143,10 @@ impl WordsContainer {
 	}
 }
 
-// Try to increase lexicographically the given array. Array (before and after) satisfies following conditions:
+// Try to lexicographically increase the given array. The array (before and after) satisfies the following conditions:
 // 1) Elements in the array are distinct and sorted
-// 2) Elements in the array are less or equal max_val
-// Return true if we have increased the array, otherwise return false
+// 2) Elements in the array are less than or equal to max_val
+// Return true if the array was increased; otherwise, return false
 fn try_increase(arr: &mut [usize], mut max_val: usize) -> bool {
 	let mut i = arr.len();
 	loop {
@@ -201,11 +201,11 @@ fn convert_res(arg: &[CharResult]) -> u32 {
 	res
 }
 
-// Calculates all possible answers for the given hidden_word if we try an attempt_word as an attempt
-// The main reason why we need to return vector instead of only one result is a letter repetitions
+// Calculate all possible answers for hidden_word when attempt_word is used as an attempt
+// The main reason to return a vector instead of only one result is letter repetitions
 // For example, if the hidden word is "abba", and the attempt word is "baaa",
 // the possible answers are "1102" and "1012" ("0" - NotPresented, "1" - "PartialMatch", "2" - "FullMatch")
-// We match either second or third letter to the first "a" of hidden word
+// We match either the second or third letter to the first "a" of the hidden word
 fn calc_all_answers(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
 	let len = attempt_word.chars().count();
 	if len != hidden_word.chars().count() {
@@ -240,7 +240,7 @@ fn calc_all_answers(attempt_word: &str, hidden_word: &str, res: &mut Vec<u32>) {
 			let old_attempt_pos_len = attempt_pos.len();
 			let old_hidden_pos_len = std::cmp::min(hidden_pos.len(), old_attempt_pos_len);
 
-			// We should remove positions that are also presented in the hidden_pos
+			// Remove positions that are also present in hidden_pos
 			let mut new_attempt_pos = Vec::new();
 
 			// Both vectors are sorted, so we can compare elements one-by-one by moving pointers and ignoring equal items
@@ -406,7 +406,7 @@ mod test {
 
 	#[test]
 	fn test_calc_matching_7() {
-		// Two of "a"-s and one of "b" is PartialMatch
+		// Two "a"s and one "b" are PartialMatch
 		let s1 = "ddaaabb";
 		let s2 = "aabcccc";
 
@@ -498,13 +498,13 @@ mod test {
 	// In this test the most reasonable choice is "abc" or "cbg" as the first attempt
 	// If we choose "bde", one of the possible answers is "100" matched with two words - "fcb" and "abc",
 	// so we have to guess between them if we get this answer
-	// By the same reason, the word "fcb" and "011" as answer tells us the possible word is either "abc" or "cbg"
-	// For the word "abc" we have three possible answers (in assumption that our attempt isn't correct):
-	//    "010" tells us that word is "bde",
+	// For the same reason, the word "fcb" and the answer "011" mean the possible word is either "abc" or "cbg"
+	// For the word "abc" we have three possible answers (under the assumption that our attempt isn't correct):
+	//    "010" tells us that the word is "bde",
 	//    "011" - "fcb",
 	//    "021" - "cbg",
-	// Because we have no possible answers with more than one words, the answer "abc" better than previous ones
-	// The "cbg" is a good choice either, because:
+	// Because we have no possible answers with more than one word, the answer "abc" is better than previous ones
+	// "cbg" is also a good choice, because:
 	//    "010" - "bde"
 	//    "110" - "fcb"
 	//    "120" - "abc"
@@ -530,7 +530,7 @@ mod test {
 		dbg!(&attempt1);
 		assert!(attempt1 == "abc" || attempt1 == "cbg");
 
-		// Let's assume we picked "bde". In this case the answer is "010" regardles of an attempt
+		// Let's assume we picked "bde". In this case, the answer is "010" regardless of an attempt
 		w.respond_to_guess(&[
 			CharResult::NotPresented,
 			CharResult::PartialMatch,

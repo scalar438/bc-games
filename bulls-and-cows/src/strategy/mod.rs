@@ -8,10 +8,10 @@ mod minmax;
 mod naive;
 
 pub trait Strategy: Send {
-	// Init the strategy. After this call the object is ready to start a new game
+	// Initialize the strategy. After this call, the object is ready to start a new game
 	fn init(&mut self);
 
-	// Make a guess. None means responses were inconsistent
+	// Make a guess. None means the responses were inconsistent
 	fn make_guess(&mut self) -> Option<&Number>;
 
 	fn respond_to_guess(&mut self, bulls: u8, cows: u8);
@@ -30,7 +30,7 @@ trait TargetFunc: Clone + Send {
 		current_candidates: i32,
 	) -> Self::EvaluationResult;
 
-	// The value of the type EvaluationResult which is bigger than any of returned by evaluate_distribution
+	// A value of type EvaluationResult that is greater than any value returned by evaluate_distribution
 	fn get_initial_value(&mut self) -> Self::EvaluationResult;
 }
 
@@ -157,7 +157,7 @@ pub enum StrategyType {
 	// Just picks the first number from the list of candidates, without any strategy
 	Naive,
 
-	// Strategy that tries to maximize the average amount of information gotten by the attempt
+	// Strategy that tries to maximize the average amount of information obtained by the attempt
 	AmountInformation,
 
 	// Strategy that tries to minimize the worst case. It isn't the best on average
@@ -166,7 +166,7 @@ pub enum StrategyType {
 	// Strategy that uses Landy's formula (see the implementation) for picking an attempt
 	Landy,
 
-	// Strategy that tries to minimize the average candidates left on the next step
+	// Strategy that tries to minimize the average number of candidates left on the next step
 	MinAvg,
 }
 

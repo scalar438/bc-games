@@ -3,7 +3,7 @@ use super::words_chooser::CharResult;
 use std::io::Write;
 
 pub enum Command {
-	StopGame, // Stop the current game, start the new one
+	StopGame, // Stop the current game and start a new one
 	Quit,     // Stop the current game and quit
 }
 
@@ -69,14 +69,16 @@ impl InputGetter {
 				Input::Value(s) => {
 					if s.chars().count() != self.word_len {
 						println!(
-							"Invalid length of word. In this game you have to use words contain {} symbols", 
+							"Invalid length of word. In this game you have to use words contain {} symbols",
 							self.word_len
 						);
 						continue;
 					}
 
 					if s.chars().any(|x| x != '0' && x != '1' && x != '2') {
-						println!("This string contains forbidden symbol(s). You can use just 0, 1 and 2 as answer");
+						println!(
+							"This string contains forbidden symbol(s). You can use just 0, 1 and 2 as answer"
+						);
 						continue;
 					}
 

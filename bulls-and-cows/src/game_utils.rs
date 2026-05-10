@@ -72,8 +72,8 @@ impl GameParams {
 		}
 	}
 
-	// Parse command-line arguments, return the game params
-	// If error occured, returns game params either, with some params are set to default
+	// Parse command-line arguments and return game parameters
+	// If an error occurs, return game parameters as well, with some parameters set to defaults
 	pub fn new_from_args() -> Result<GameParams, GameParamsError> {
 		let mut error_string = None;
 
@@ -236,7 +236,7 @@ impl GameParams {
 		}
 	}
 
-	// Return (number_of_bulls, number_of_cows)
+	// Returns (number_of_bulls, number_of_cows)
 	pub fn calc_bc(&self, a: &Number, b: &Number) -> (u8, u8) {
 		calc_bc_with_base(a, b, self.base)
 	}
