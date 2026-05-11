@@ -100,17 +100,20 @@ impl GameParams {
 		let mut error_string = None;
 
 		let mut need_read_nl = false;
-		let mut number_len = 4;
+		let mut number_len = None;
 
 		let mut need_read_base = false;
 		let mut base = 10;
 
 		let mut with_repetitions = false;
 
+		let mut need_read_number = false;
+		let mut number = None;
+
 		for arg in args() {
 			if need_read_nl {
 				match arg.parse::<u8>() {
-					Ok(val) => number_len = val,
+					Ok(val) => number_len = Some(val),
 					Err(e) => {
 						error_string = Some(format!("Can't parse number_len: {:}", e.to_string()))
 					}
@@ -137,9 +140,29 @@ impl GameParams {
 			if arg == "-wr" || arg == "--with_repetitions" {
 				with_repetitions = true;
 			}
+
+			if arg == "-n" || arg == "--number" {
+				need_read_number = true;
+				continue;
+			}
+			if need_read_number {
+				number = Some(arg);
+				need_read_number = false;
+			}
 		}
 
-		let result = GameParams::new(number_len)
+		match (number_len, number) {
+			(Some(num), Some(number_str)) if number_str.len() != num as usize => {
+				error_string = Some(format!(
+					"Number length doesn't match the specified number_len"
+				))
+			}
+			(None, Some(number_str)) => number_len = Some(number_str.len() as u8),
+			(None, None) => number_len = Some(4),
+			_ => {}
+		}
+
+		let result = GameParams::new(number_len.unwrap())
 			.with_repetitions(with_repetitions)?
 			.with_base(base)?;
 
