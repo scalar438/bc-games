@@ -43,5 +43,9 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Set UMASK for group-writable permissions on created files
+# This ensures files created in the container are writable by the host user
+RUN echo 'umask 0002' >> /etc/profile.d/umask.sh
+
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=dialog
