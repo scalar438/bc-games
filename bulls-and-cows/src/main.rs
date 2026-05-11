@@ -208,7 +208,7 @@ fn parse_strategy_type() -> Result<StrategyType, ParseStrategyTypeError> {
 		if need_parse_strategy {
 			for (n, st) in [
 				("naive", StrategyType::Naive),
-				("amountinformation", StrategyType::AmountInformation),
+				("aminf", StrategyType::AmountInformation),
 				("landy", StrategyType::Landy),
 				("minavg", StrategyType::MinAvg),
 				("minmax", StrategyType::MinMax),
