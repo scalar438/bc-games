@@ -204,7 +204,7 @@ impl GameParams {
 
 	pub fn validate(&self) -> Option<String> {
 		if self.base > MAX_BASE {
-			return Some("Base can't be bigger than {MAX_BASE}".to_owned());
+			return Some(format!("Base can't be bigger than {MAX_BASE}"));
 		}
 		if !self.with_reps && self.base < self.number_len {
 			return Some("Base must be bigger or equal if repetitions aren't allowed".to_owned());
@@ -259,7 +259,7 @@ impl GameParams {
 
 	fn to_char(&self, b: u8) -> Result<char, String> {
 		if b >= self.base {
-			return Err(format!("value {b} is too large"));
+			return Err(format!("character {b} is too large"));
 		}
 		match b {
 			0..=9 => Ok((b + ('0' as u8)) as char),

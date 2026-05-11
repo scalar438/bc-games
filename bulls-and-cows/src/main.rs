@@ -190,6 +190,43 @@ fn solve_for_one_number(
 	}
 }
 
+fn print_help_message() {
+	println!(
+		"This program can be run in different modes. To specify a mode, use the first argument of the program. Available modes:\n"
+	);
+	println!(
+		"1) solve - play the game with the strategy. The program will make guesses, and you should input the number of bulls and cows for each guess."
+	);
+	println!(
+		"2) print - the program will solve the puzzle for a given hidden number and print all steps."
+	);
+	println!("3) analyze - the program will analyze the performance of different strategies.");
+	println!("4) help - display this help message.\n");
+
+	println!("For each mode, you can specify game parameters using the following arguments:");
+	println!("-b or --base: the base of the numbers (default is 10)");
+	println!(
+		"-n or --number: the hidden number for the 'print' mode. It should fit to the game parameters (base and number length)."
+	);
+	println!(
+		"-l or --number_len: the length of the number. If it isn't specified, it will be determined by the length of the hidden number (if it is specified) or set to 4."
+	);
+	println!(
+		"-wr or --with_repetitions: whether the numbers can contain repeated digits (default is false)."
+	);
+	println!("-st or --strategy_type: the strategy type to use in 'analyze' mode. ");
+	println!(
+		"   Available strategies: naive, aminf, landy, minavg, minmax. If it isn't specified, the naive strategy will be used."
+	);
+
+	println!("\nExamples: \n");
+	println!("'bc solve -st minavg' - the classic bulls-and-cow game.");
+	println!(
+		"'bc analyze -nl 10 --base 2 -wr' - analyze solving the game with 10-digit binary numbers"
+	);
+	println!("'bc print -n 70645231 -b 8' - play the game where 8-digit permutation is guessed");
+}
+
 enum GameMode {
 	Solve,
 	Print,
@@ -342,7 +379,7 @@ fn main() {
 		}
 
 		GameMode::Help => {
-			println!("This is a help message :)");
+			print_help_message();
 		}
 	}
 }
