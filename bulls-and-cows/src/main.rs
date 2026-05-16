@@ -150,7 +150,7 @@ fn one_game(a: &mut dyn strategy::Strategy) {
 		if let Some(guess) = a.make_guess() {
 			println!("Guess #{:?}: {:}", counter, guess);
 		} else {
-			println!("Answers are inconsistent");
+			println!("The answers are inconsistent. Please check your input.");
 			break;
 		}
 		counter += 1;
@@ -175,7 +175,7 @@ fn solve_for_one_number(
 		if let Some(guess) = a.make_guess() {
 			let (bulls, cows, colored_number) = g.calc_bc_extended(guess, &hidden_number);
 			println!(
-				"Guess #{:?}: {:}, answer is {:} bulls, {:} cows",
+				"Guess #{:?}: {:}, response: {:} bulls, {:} cows",
 				counter, colored_number, bulls, cows
 			);
 			if bulls == g.number_len {
@@ -183,7 +183,7 @@ fn solve_for_one_number(
 			}
 			a.respond_to_guess(bulls, cows);
 		} else {
-			println!("Answers are inconsistent. Something wrong with the strategy");
+			println!("The answers are inconsistent. There may be an issue with the strategy.");
 			break;
 		}
 		counter += 1;
@@ -192,7 +192,7 @@ fn solve_for_one_number(
 
 fn print_help_message() {
 	println!(
-		"This program can be run in different modes. To specify a mode, use the first argument of the program. Available modes:\n"
+		"This program can be run in different modes. To specify a mode, use the first argument. Available modes:\n"
 	);
 	println!(
 		"1) solve - play the game with the strategy. The program will make guesses, and you should input the number of bulls and cows for each guess."
@@ -206,25 +206,25 @@ fn print_help_message() {
 	println!("For each mode, you can specify game parameters using the following arguments:");
 	println!("-b or --base: the base of the numbers (default is 10)");
 	println!(
-		"-n or --number: the hidden number for the 'print' mode. It should fit to the game parameters (base and number length)."
+		"-n or --number: the hidden number for the 'print' mode. It should match the game parameters (base and number length)."
 	);
 	println!(
-		"-l or --number_len: the length of the number. If it isn't specified, it will be determined by the length of the hidden number (if it is specified) or set to 4."
+		"-l or --number_len: the length of the number. If not specified, it will be determined by the length of the hidden number (if provided), or set to 4."
 	);
 	println!(
 		"-wr or --with_repetitions: whether the numbers can contain repeated digits (default is false)."
 	);
-	println!("-st or --strategy_type: the strategy type to use in 'analyze' mode. ");
+	println!("-st or --strategy_type: the strategy type to use in 'analyze' mode.");
 	println!(
-		"   Available strategies: naive, aminf, landy, minavg, minmax. If it isn't specified, the naive strategy will be used."
+		"   Available strategies: naive, aminf, landy, minavg, minmax. If not specified, the naive strategy will be used."
 	);
 
 	println!("\nExamples: \n");
-	println!("'bc solve -st minavg' - the classic bulls-and-cow game.");
+	println!("'bc solve -st minavg' - the classic Bulls and Cows game.");
 	println!(
-		"'bc analyze -nl 10 --base 2 -wr' - analyze solving the game with 10-digit binary numbers"
+		"'bc analyze -nl 10 --base 2 -wr' - analyze solving the game with 10-digit binary numbers."
 	);
-	println!("'bc print -n 70645231 -b 8' - play the game where 8-digit permutation is guessed");
+	println!("'bc print -n 70645231 -b 8' - play the game where an 8-digit permutation is guessed.");
 }
 
 enum GameMode {
@@ -271,7 +271,7 @@ fn parse_strategy_type_def() -> StrategyType {
 
 		Err(_) => {
 			let s = StrategyType::Naive;
-			println!("Couldn't parse a strategy type. {:?} will be used", s);
+			println!("Could not parse the strategy type. {:?} will be used instead.", s);
 			s
 		}
 	}
@@ -303,7 +303,7 @@ fn main() {
 				"without repetitions"
 			};
 			println!(
-				"Actual game params: base = {:}, number_len = {:}, {with_rep_s}",
+				"Current game parameters: base = {:}, number_len = {:}, {with_rep_s}",
 				game_params.base, game_params.number_len
 			);
 		}
@@ -323,7 +323,7 @@ fn main() {
 				],
 
 				Err(ParseStrategyTypeError::UnknownStrategy(s)) => {
-					println!("Unknown strategy type: {s}");
+					println!("Unknown strategy type: {s}.");
 					return;
 				}
 			};
@@ -332,19 +332,19 @@ fn main() {
 
 				match evaluate_strategy(s.as_mut(), &game_params) {
 					Ok(res) => {
-						println!("Strategy type: {:?}, check successfull. Results", st);
+						println!("Strategy type: {:?}, check successful. Results:", st);
 						println!(
-							"Total number of guesses {:}, average {:}",
+							"Total number of guesses: {:}, average: {:}",
 							res.total, res.avg
 						);
 						println!(
-							"Worst number {:} guessed with {:} attempts",
+							"Worst case: number {:} was guessed in {:} attempts.",
 							res.worst_number, res.worst_guess_count
 						);
 						println!("Total time: {:?}\n", res.time);
 					}
 					Err(s) => println!(
-						"Strategy type: {:?} isn't able to solve the puzzle. Error message: {:}",
+						"Strategy type: {:?} was not able to solve the puzzle. Error message: {:}",
 						st, s
 					),
 				}
@@ -361,14 +361,14 @@ fn main() {
 							&game_params,
 						);
 					} else {
-						println!("The number {p_n} doesn't fit to the game parameters");
+						println!("The number {p_n} does not fit the game parameters.");
 					}
 				} else {
-					println!("There is no required -n argument");
+					println!("The required -n argument is missing.");
 				}
 			}
 			None => {
-				println!("There is no required -n argument");
+				println!("The required -n argument is missing.");
 			}
 		},
 
