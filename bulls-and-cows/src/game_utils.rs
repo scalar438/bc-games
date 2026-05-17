@@ -551,34 +551,35 @@ fn increase_vector(a: &mut [u8], maxval: u8) -> bool {
 
 pub fn calc_bc_with_base(a: &Number, b: &Number, base: u8) -> (u8, u8) {
 	let mut count_a = {
-		let mut t: [MaybeUninit<i32>; MAX_BASE as usize] =
+		let mut t: [MaybeUninit<u8>; MAX_BASE as usize] =
 			unsafe { MaybeUninit::uninit().assume_init() };
 		for v in t[0..base as usize].iter_mut() {
 			*v = MaybeUninit::new(0);
 		}
-		unsafe { mem::transmute::<_, [i32; MAX_BASE as usize]>(t) }
+		unsafe { mem::transmute::<_, [u8; MAX_BASE as usize]>(t) }
 	};
 	let mut count_b = {
-		let mut t: [MaybeUninit<i32>; MAX_BASE as usize] =
+		let mut t: [MaybeUninit<u8>; MAX_BASE as usize] =
 			unsafe { MaybeUninit::uninit().assume_init() };
 		for v in t[0..base as usize].iter_mut() {
 			*v = MaybeUninit::new(0);
 		}
-		unsafe { mem::transmute::<_, [i32; MAX_BASE as usize]>(t) }
+		unsafe { mem::transmute::<_, [u8; MAX_BASE as usize]>(t) }
 	};
-	let mut bulls: i32 = 0;
+	let mut bulls = 0;
 	for (digit_a, digit_b) in a.data.iter().zip(b.data.iter()) {
 		if *digit_a == *digit_b {
 			bulls += 1;
+		} else {
+			count_a[*digit_a as usize] += 1;
+			count_b[*digit_b as usize] += 1;
 		}
-		count_a[*digit_a as usize] += 1;
-		count_b[*digit_b as usize] += 1;
 	}
-	let mut cows: i32 = -bulls;
+	let mut cows = 0;
 	for (c_a, c_b) in count_a.iter().take(base as usize).zip(count_b.iter()) {
-		cows += i32::min(*c_a, *c_b);
+		cows += u8::min(*c_a, *c_b);
 	}
-	(bulls as u8, cows as u8)
+	(bulls, cows)
 }
 
 #[cfg(test)]
@@ -795,6 +796,10 @@ mod test {
 		assert_eq!(
 			calc_bc_with_base(&Number::from("1234"), &Number::from("7893"), 10),
 			(0, 1)
+		);
+		assert_eq!(
+			calc_bc_with_base(&Number::from("0112"), &Number::from("1213"), 4),
+			(1, 2)
 		);
 	}
 

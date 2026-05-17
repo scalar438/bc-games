@@ -224,7 +224,9 @@ fn print_help_message() {
 	println!(
 		"'bc analyze -nl 10 --base 2 -wr' - analyze solving the game with 10-digit binary numbers."
 	);
-	println!("'bc print -n 70645231 -b 8' - play the game where an 8-digit permutation is guessed.");
+	println!(
+		"'bc print -n 70645231 -b 8' - play the game where an 8-digit permutation is guessed."
+	);
 }
 
 enum GameMode {
@@ -271,7 +273,10 @@ fn parse_strategy_type_def() -> StrategyType {
 
 		Err(_) => {
 			let s = StrategyType::Naive;
-			println!("Could not parse the strategy type. {:?} will be used instead.", s);
+			println!(
+				"Could not parse the strategy type. {:?} will be used instead.",
+				s
+			);
 			s
 		}
 	}
